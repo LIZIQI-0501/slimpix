@@ -45,6 +45,12 @@
     clearTimeout(toast._t)
     toast._t = setTimeout(function () { t.classList.add('hidden') }, 1400)
   }
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+    })
+  }
+  function escapeAttr(s) { return escapeHtml(s) }
 
   // 当前体重：以最新记录为准，无记录则用目标体重兜底
   function currentWeight() {
@@ -301,6 +307,10 @@
       '<div class="tabs">' + tabsHtml + '</div>' +
       '<div class="card"><div class="row-between"><span class="card-title">' + mealLabels[dietState.meal] + '已记录</span><span class="muted">' + mealKcal + ' kcal</span></div>' +
         '<div id="mealList">' + listHtml + '</div></div>' +
+      '<div class="card recognize-card"><div class="card-title">🍽 自由输入识别</div>' +
+        '<div class="rec-row"><input class="search-input" id="recInput" placeholder="描述你吃了什么，如：中午吃了红烧肉和半碗米饭">' +
+        '<button class="btn rec-btn" id="recBtn">识别</button></div>' +
+        '<div id="recResult"></div></div>' +
       '<div class="search-bar"><input class="search-input" id="dietSearch" placeholder="搜索食物，如 鸡胸肉" value="' + dietState.keyword + '"></div>' +
       '<div class="cats">' + catsHtml + '</div>' +
       '<div class="food-grid" id="foodGrid">' + gridHtml + '</div>'
@@ -324,6 +334,10 @@
     })
     var inp = $('dietSearch')
     if (inp) inp.oninput = function () { dietState.keyword = inp.value; renderFoodGrid() }
+    var rb = $('recBtn')
+    if (rb) rb.onclick = recognizeFood
+    var ri = $('recInput')
+    if (ri) ri.onkeydown = function (e) { if (e.key === 'Enter') recognizeFood() }
   }
 
   function renderFoodGrid() {
@@ -377,6 +391,69 @@
     dietState.sheet = null
     var overlay = $('settingsOverlay')
     overlay.classList.add('hidden'); overlay.innerHTML = ''
+  }
+
+  // ---------- 饮食：自由输入识别（调后端 /recognize） ----------
+  function recognizeFood() {
+    var inp = $('recInput')
+    var text = (inp && inp.value || '').trim()
+    if (!text) { toast('请输入你吃了什么'); return }
+    var btn = $('recBtn'); if (btn) { btn.disabled = true; btn.textContent = '识别中…' }
+    var box = $('recResult')
+    if (box) box.innerHTML = '<div class="muted small">正在识别…</div>'
+    var payload = JSON.stringify({ text: text, apiKey: (settings.llmApiKey || '') })
+    fetch(PUSH_SERVER_URL + '/recognize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload
+    }).then(function (r) {
+      return r.json().then(function (j) { return { ok: r.ok, status: r.status, j: j } })
+    }).then(function (res) {
+      if (btn) { btn.disabled = false; btn.textContent = '识别' }
+      if (!res.ok || !res.j || !res.j.ok) {
+        var msg = (res.j && res.j.error) || '识别失败'
+        if (box) box.innerHTML = '<div class="muted small">识别失败：' + escapeHtml(msg) + '</div>'
+        if (res.status === 503) toast('请先在「设置」填写大模型 API Key')
+        return
+      }
+      renderRecResult(res.j.items || [])
+    }).catch(function () {
+      if (btn) { btn.disabled = false; btn.textContent = '识别' }
+      if (box) box.innerHTML = '<div class="muted small">网络错误：请确认后端已部署且可访问</div>'
+    })
+  }
+
+  function renderRecResult(items) {
+    var box = $('recResult')
+    if (!box) return
+    if (!items.length) { box.innerHTML = '<div class="muted small">没识别出食物，换个说法试试～</div>'; return }
+    var html = items.map(function (it, i) {
+      return '<label class="rec-item"><input type="checkbox" data-ri="' + i + '" checked>' +
+        '<span class="ri-text"><span class="ri-name">' + escapeHtml(it.name) + '</span>' +
+        '<span class="ri-sub">' + it.grams + 'g · ' + it.kcal + 'kcal · 蛋白' + it.protein + 'g</span></span></label>'
+    }).join('')
+    html += '<button class="btn" id="recAdd">加入' + ({ breakfast: '早餐', lunch: '午餐', dinner: '晚餐', extra: '加餐' }[dietState.meal]) + '</button>'
+    box.innerHTML = html
+    $('recAdd').onclick = function () {
+      var meal = dietState.meal
+      var diet = S.getDiet(S.todayStr())
+      var added = 0
+      items.forEach(function (it, i) {
+        var cb = box.querySelector('[data-ri="' + i + '"]')
+        if (cb && cb.checked) {
+          diet[meal].push({
+            foodId: null, name: it.name, grams: it.grams, cat: null,
+            kcal: it.kcal, protein: it.protein, carb: it.carb, fat: it.fat, fiber: it.fiber,
+            black: false, blackReason: ''
+          })
+          added++
+        }
+      })
+      S.setDiet(S.todayStr(), diet)
+      box.innerHTML = '<div class="muted small">已加入 ' + added + ' 项 ✓</div>'
+      renderDiet(); refreshSprite()
+      toast('已加入 ' + added + ' 项')
+    }
   }
 
   // ---------- 体重 ----------
@@ -559,6 +636,8 @@
           ACTS.map(function (a, i) { return '<button data-act="' + i + '" class="' + (i === actIdx ? 'on' : '') + '">' + a.label + '</button>' }).join('') +
         '</div></div>' +
         '<div class="field"><label>每日饮水目标 (ml)</label><input id="sW" type="number" value="' + settings.waterGoalMl + '"></div>' +
+        '<div class="field"><label>大模型 API Key（食物识别，选填）</label><input id="sKey" type="text" value="' + escapeAttr(settings.llmApiKey || '') + '" placeholder="DeepSeek / OpenAI Key，留空则无法识别"></div>' +
+        '<div class="muted small" style="margin-top:-6px">用于饮食页「自由输入识别」：输入你吃了什么，系统自动识别食物并算出卡路里。Key 仅存本机(localStorage)，发送到你自己的后端用于调用大模型，不上传任何第三方。</div>' +
         '<div class="switch-row"><span>饮水提醒</span><input type="checkbox" id="sWR" ' + (settings.waterReminder ? 'checked' : '') + '></div>' +
         '<div class="muted small" style="margin-top:-6px">开启后到点推送系统通知提醒喝水（App 打开/后台即可提醒；若已部署推送后端并「添加到主屏幕」，关闭 App 也能像闹钟一样提醒。iOS 需 iOS 16.4+ 且先「添加到主屏幕」）</div>' +
         '<div class="switch-row"><span>饭点提醒</span><input type="checkbox" id="sMR" ' + (settings.mealReminder ? 'checked' : '') + '></div>' +
@@ -580,7 +659,7 @@
       var g = overlay.querySelector('#sG button.on').getAttribute('data-g')
       var ai = parseInt(overlay.querySelector('#sAct button.on').getAttribute('data-act'), 10)
       profile = S.saveProfile({ height: h, age: a, targetWeight: t, gender: g, activityFactor: ACTS[ai].v, targetBodyFat: tbf, currentBodyFat: cbf })
-      settings = S.saveSettings({ waterGoalMl: parseInt($('sW').value) || 1700, waterReminder: $('sWR').checked, mealReminder: $('sMR').checked, bgMusic: $('sBM').checked })
+      settings = S.saveSettings({ waterGoalMl: parseInt($('sW').value) || 1700, waterReminder: $('sWR').checked, mealReminder: $('sMR').checked, bgMusic: $('sBM').checked, llmApiKey: ($('sKey').value || '').trim() })
       if (window.SlimMusic) window.SlimMusic.setEnabled($('sBM').checked)
       if (settings.waterReminder) requestWaterPermission(); else { stopWaterScheduler(); unsubscribeFromPush() }
       closeSettings(); renderTab(); refreshSprite(); toast('已保存')

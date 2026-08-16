@@ -56,6 +56,9 @@ GitHub Pages 只能放静态文件、不能跑后端，所以要单独部署这�
 | `ALLOWED_ORIGIN` | 网页版来源，必须和你的 Pages 完全一致 | `https://liziqi-0501.github.io` |
 | `TZ` | 时区，确保整点对应你本地时间 | `Asia/Shanghai` |
 | `VAPID_PUBLIC` / `VAPID_PRIVATE` | 若用环境变量提供密钥，就不读 `vapid-keys.json` | — |
+| `LLM_API_KEY` | 饮食页「自由输入识别」用的大模型 Key。**不设这个变量也能跑推送**；只有识别食物时才需要。优先用前端设置里用户自己填的 Key | — |
+| `LLM_BASE_URL` | 大模型兼容接口地址（OpenAI 格式 `/chat/completions`） | `https://api.deepseek.com` |
+| `LLM_MODEL` | 模型名 | `deepseek-chat` |
 
 > ⚠️ **Render 免费版会休眠**：15 分钟无请求就暂停，导致到点不推送。
 > 解决：用免费服务 [cron-job.org](https://cron-job.org) 每 **5 分钟** 调用一次你的 `https://<你的后端域名>/tick`（同时也保持进程唤醒）。`/tick` 本身就会检查并补发到期未发的饮水提醒。
@@ -91,4 +94,5 @@ GitHub Pages 只能放静态文件、不能跑后端，所以要单独部署这�
 - `POST /subscribe`  body: `{ "subscription": <PushSubscription> }` — 新增订阅
 - `POST /unsubscribe` body: `{ "endpoint": "..." }` — 取消订阅
 - `GET /tick` — 手动触发一次到点检查（供外部 cron 调用）
+- `POST /recognize` body: `{ "text": "中午吃了红烧肉和半碗米饭", "apiKey": "可选，用户自己的大模型Key" }` — 返回 `{ "ok": true, "items": [{"name","grams","kcal","protein","carb","fat","fiber"}] }`。无 Key 返回 503，空文本/坏 JSON 返回 400。
 - `GET /health` — 健康检查

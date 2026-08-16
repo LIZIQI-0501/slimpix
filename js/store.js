@@ -29,7 +29,7 @@
     targetBodyFat: 24, currentBodyFat: null
   }
   const DEFAULT_SETTINGS = {
-    waterReminder: true, mealReminder: true, waterGoalMl: 1700, bgMusic: false
+    waterReminder: true, mealReminder: true, waterGoalMl: 1700, bgMusic: false, llmApiKey: ''
   }
 
   function getProfile() {

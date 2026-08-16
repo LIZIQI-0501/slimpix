@@ -31,6 +31,88 @@ if (process.env.VAPID_PUBLIC && process.env.VAPID_PRIVATE) {
 }
 webpush.setVapidDetails('mailto:slimpix@example.com', vapidPublic, vapidPrivate)
 
+// ============ 大模型食物识别（饮食页「自由输入识别」用） ============
+// 默认走 DeepSeek（中文强、费用极低）；可经环境变量切换到 OpenAI 等兼容接口。
+// 优先级：请求体里的 apiKey（用户在 App 设置填的，存本机） > 后端环境变量 LLM_API_KEY。
+const LLM_API_KEY = process.env.LLM_API_KEY || ''
+const LLM_BASE_URL = (process.env.LLM_BASE_URL || 'https://api.deepseek.com').replace(/\/$/, '')
+const LLM_MODEL = process.env.LLM_MODEL || 'deepseek-chat'
+
+const RECOGNIZE_SYSTEM_PROMPT =
+  '你是一个严谨的中文营养识别助手。用户会描述一顿饭或若干食物（可能是一句话，如"中午吃了红烧肉和半碗米饭"）。请：\n' +
+  '1) 拆解出其中包含的每一种食物；\n' +
+  '2) 为每种食物估算一份常见食用分量（克，字段 grams）；\n' +
+  '3) 给出该分量下的热量(kcal)、蛋白质(g)、碳水(g)、脂肪(g)、膳食纤维(g)的绝对值（字段 kcal/protein/carb/fat/fiber）。\n' +
+  '只输出 JSON，格式严格为：{"items":[{"name":"食物中文名","grams":数值,"kcal":数值,"protein":数值,"carb":数值,"fat":数值,"fiber":数值}]}。\n' +
+  '无法识别时返回 {"items":[]}。\n' +
+  '规则：不要编造数据；不确定分量按常见一份估算；若用户给出明确分量（如"200克""一个苹果"）则以用户描述为准并合理换算克数；不要输出 JSON 以外的任何文字。'
+
+function parseItems(content) {
+  var s = (content || '').trim()
+  // 去掉可能的 ```json ... ``` 包裹
+  var fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i)
+  if (fence) s = fence[1].trim()
+  var data = null
+  try { data = JSON.parse(s) } catch (e) {
+    var a = s.indexOf('{'), b = s.lastIndexOf('}')
+    if (a >= 0 && b > a) { try { data = JSON.parse(s.slice(a, b + 1)) } catch (e2) { /* ignore */ } }
+  }
+  if (!data || !Array.isArray(data.items)) throw new Error('无法解析大模型返回')
+  var items = data.items
+    .filter(function (it) { return it && typeof it.name === 'string' && it.name && isFinite(it.grams) && it.grams > 0 })
+    .map(function (it) {
+      function num(v) { var n = parseFloat(v); return isFinite(n) ? Math.max(0, n) : 0 }
+      return {
+        name: it.name,
+        grams: Math.round(num(it.grams)),
+        kcal: Math.round(num(it.kcal)),
+        protein: Math.round(num(it.protein) * 10) / 10,
+        carb: Math.round(num(it.carb) * 10) / 10,
+        fat: Math.round(num(it.fat) * 10) / 10,
+        fiber: Math.round(num(it.fiber) * 10) / 10
+      }
+    })
+  return { items: items }
+}
+
+function callLLM(text, apiKey) {
+  var key = apiKey || LLM_API_KEY
+  if (!key) {
+    var err = new Error('未配置大模型 API Key（请在 App 设置中填写，或在后端设置 LLM_API_KEY 环境变量）')
+    err.status = 503
+    return Promise.reject(err)
+  }
+  var body = {
+    model: LLM_MODEL,
+    messages: [
+      { role: 'system', content: RECOGNIZE_SYSTEM_PROMPT },
+      { role: 'user', content: text }
+    ],
+    response_format: { type: 'json_object' },
+    temperature: 0.2
+  }
+  var ctrl = new AbortController()
+  var timer = setTimeout(function () { ctrl.abort() }, 20000)
+  return fetch(LLM_BASE_URL + '/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+    body: JSON.stringify(body),
+    signal: ctrl.signal
+  }).then(function (r) {
+    clearTimeout(timer)
+    return r.json().then(function (j) { return { status: r.status, json: j } })
+  }).then(function (res) {
+    if (res.status !== 200) {
+      var err = new Error('大模型返回错误: ' + ((res.json && res.json.error && res.json.error.message) || res.status))
+      err.status = 502
+      throw err
+    }
+    var content = res.json.choices && res.json.choices[0] && res.json.choices[0].message && res.json.choices[0].message.content
+    if (!content) { var e2 = new Error('大模型返回为空'); e2.status = 502; throw e2 }
+    return parseItems(content)
+  })
+}
+
 // 饮水时段（务必与 web/js/store.js 的 WATER_SLOTS 保持一致）
 const WATER_SLOTS = ['07:00', '09:00', '11:00', '13:00', '15:00', '17:30', '19:00', '21:30']
 
@@ -118,6 +200,25 @@ const server = http.createServer(function (req, res) {
       } catch (e) {
         res.writeHead(400); res.end(JSON.stringify({ ok: false, error: String(e) }))
       }
+    })
+    return
+  }
+  if (req.method === 'POST' && req.url === '/recognize') {
+    let body = ''
+    req.on('data', function (c) { body += c })
+    req.on('end', function () {
+      let obj
+      try { obj = JSON.parse(body) } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: false, error: 'bad json' })); return
+      }
+      const text = (obj.text || '').toString().slice(0, 500).trim()
+      if (!text) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: false, error: 'empty text' })); return }
+      callLLM(text, obj.apiKey).then(function (result) {
+        res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: true, items: result.items }))
+      }).catch(function (err) {
+        const st = (err && err.status) || 500
+        res.writeHead(st, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: false, error: (err && err.message) || 'server error' }))
+      })
     })
     return
   }
