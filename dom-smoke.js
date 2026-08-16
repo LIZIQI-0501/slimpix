@@ -81,10 +81,13 @@ try {
   if (!doc.getElementById('pReset')) throw new Error('计划未生成')
   steps++; console.log('✓ 30天计划生成')
 
-  // 7. 分析 Tab
-  click(doc.querySelector('#tabbar .tab[data-tab="analysis"]'))
-  if (!doc.getElementById('view').innerHTML.includes('明日体重预测')) throw new Error('分析页未渲染')
-  steps++; console.log('✓ 分析 Tab 渲染')
+  // 7. 首页：科学减肥视频（B站嵌入）+ 运动模块（帕梅拉）
+  click(doc.querySelector('#tabbar .tab[data-tab="home"]'))
+  const homeV = doc.getElementById('view').innerHTML
+  if (!homeV.includes('player.bilibili.com')) throw new Error('首页缺少 B站科普视频')
+  if (!homeV.includes('科学减肥')) throw new Error('首页缺少科学减肥标题')
+  if (!homeV.includes('每日塑形') || !homeV.includes('BV1vzu36mEVd')) throw new Error('首页缺少运动模块/帕梅拉视频')
+  steps++; console.log('✓ 首页科普视频(B站) + 运动模块(帕梅拉) 渲染')
 
   // 8. 设置面板：打开 + 保存
   click(doc.getElementById('topbarGear'))
@@ -101,13 +104,12 @@ try {
   if (!doc.getElementById('sClear')) throw new Error('清空按钮缺失')
   steps++; console.log('✓ 设置面板可再次打开')
 
-  // 10. 科普 Tab：渲染 + 视频播放器存在 + 无报错
-  click(doc.querySelector('#tabbar .tab[data-tab="science"]'))
-  const v = doc.getElementById('view').innerHTML
-  if (!v.includes('健康科普')) throw new Error('科普页未渲染')
-  if (!v.includes('video-wrap') || !v.includes('iframe')) throw new Error('科普页缺少视频播放器')
-  if (!v.includes('v.qq.com/iframe/player.html')) throw new Error('科普页缺少视频嵌入地址')
-  steps++; console.log('✓ 科普 Tab 渲染 + 视频播放器 + 官方链接')
+  // 10. 验证已删除的 分析 / 科普 Tab 不再存在，基础 Tab 完整
+  const tabbar = doc.getElementById('tabbar').innerHTML
+  if (tabbar.includes('data-tab="analysis"')) throw new Error('分析 Tab 仍存在')
+  if (tabbar.includes('data-tab="science"')) throw new Error('科普 Tab 仍存在')
+  if (!tabbar.includes('data-tab="home"') || !tabbar.includes('data-tab="diet"') || !tabbar.includes('data-tab="weight"') || !tabbar.includes('data-tab="plan"')) throw new Error('基础 Tab 缺失')
+  steps++; console.log('✓ 分析/科普 Tab 已移除, 仅保留 首页/饮食/体重/计划')
 
 } catch (e) {
   errors.push('TEST STEP FAILED: ' + e.message)

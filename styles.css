@@ -221,6 +221,23 @@ body {
 .video-link { display: block; margin-top: 8px; color: #4E9C96; font-size: 13px; text-decoration: none; }
 .video-link:hover { text-decoration: underline; }
 
+/* 首页顶部科普视频（最醒目） */
+.sci-hero { background: linear-gradient(135deg, #EAF6F2, #ffffff); border: 1px solid #CDEBE4; }
+.sci-head { font-size: 16px; font-weight: 800; color: var(--green-d); margin-bottom: 2px; }
+
+/* 喝水提醒入口 */
+.remind-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.mini-btn { border: none; background: var(--blue); color: #fff; font-size: 13px; font-weight: 600; padding: 7px 12px; border-radius: 999px; cursor: pointer; }
+.mini-btn:active { background: #3b8cc0; }
+
+/* 运动模块 */
+.ex-card { background: linear-gradient(135deg, #F3F8F7, #ffffff); border: 1px solid #DCEAE8; }
+.ex-list { display: flex; flex-direction: column; gap: 6px; margin: 6px 0 10px; }
+.ex-item { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "name reps" "note reps"; align-items: center; padding: 8px 10px; background: #F4F9F8; border-radius: 10px; }
+.ex-name { grid-area: name; font-weight: 700; font-size: 14px; }
+.ex-reps { grid-area: reps; font-weight: 700; color: var(--green-d); font-size: 13px; white-space: nowrap; }
+.ex-note { grid-area: note; color: var(--muted); font-size: 12px; }
+
 /* 食物轻轻浮动 + 呼吸 + 蒸汽 */
 .food { transform-box: fill-box; transform-origin: center; animation: bob 3.2s ease-in-out infinite; }
 .food.f2 { animation-delay: .25s } .food.f3 { animation-delay: .5s }

@@ -88,10 +88,31 @@
     }
   }
 
+  // 短促提示音（用于喝水提醒等），自带 AudioContext，无需背景乐开启
+  function chime() {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    var c = new AC();
+    if (c.resume) c.resume();
+    var now = c.currentTime;
+    [659.25, 880, 1046.5].forEach(function (f, i) {
+      var o = c.createOscillator(), g = c.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      var s = now + i * 0.12;
+      g.gain.setValueAtTime(0.0001, s);
+      g.gain.exponentialRampToValueAtTime(0.22, s + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, s + 0.4);
+      o.connect(g).connect(c.destination);
+      o.start(s); o.stop(s + 0.45);
+    });
+    setTimeout(function () { try { c.close() } catch (e2) {} }, 1300);
+  }
+
   window.SlimMusic = {
     isEnabled: function () { return enabled; },
     start: start,
     stop: stop,
+    chime: chime,
     setEnabled: function (on) { if (on) start(); else stop(); }
   };
 })();

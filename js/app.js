@@ -85,6 +85,13 @@
     }).join('')
 
     view().innerHTML =
+      // 顶部最醒目：科学减肥科普视频（B站嵌入，无广告，封面即方法）
+      '<div class="card sci-hero">' +
+        '<div class="sci-head">🎬 科学减肥 · 不走弯路</div>' +
+        '<div class="muted small" style="margin:4px 0 2px">权威科普：合理饮食 + 规律运动，拒绝液断 / 节食 / 饥饿</div>' +
+        '<div class="video-wrap"><iframe src="https://player.bilibili.com/player.html?bvid=BV1Rh4y1c7s9&page=1&high_quality=1&danmaku=0&autoplay=0" allowfullscreen="true" scrolling="no" frameborder="0"></iframe></div>' +
+        '<a class="video-link" href="https://www.bilibili.com/video/BV1Rh4y1c7s9" target="_blank" rel="noopener">若播放器未加载，点此前往 B站原视频 ↗</a>' +
+      '</div>' +
       (mealTip ? '<div class="card" style="background:#EAF6F2;color:#3C7A75">' + mealTip + '</div>' : '') +
       '<div class="hero" style="background:' + bmiColor + '">' +
         '<div class="hero-label">今日 BMI</div>' +
@@ -101,7 +108,8 @@
         '<div class="water-total">' + waterMl + ' / ' + waterGoal + ' ml</div>' +
         '<div class="bar"><div class="bar-fill" style="width:' + waterPct + '%;background:#4A9FD6"></div></div>' +
         '<div class="slots">' + slotHtml + '</div>' +
-        '<div class="muted small">点时间段打卡（每次 250ml）</div></div>' +
+        '<div class="muted small">点时间段打卡（每次 250ml）</div>' +
+        '<div class="remind-row" id="waterRemindRow"></div></div>' +
 
       '<div class="card"><div class="row-between"><span class="card-title">今日热量</span><span class="link" data-go="diet">去记录 ›</span></div>' +
         '<div class="row"><span class="kcal-now" style="font-size:26px;font-weight:800">' + todayKcal + '</span><span class="muted">/ ' + tgtKcal + ' kcal</span></div>' +
@@ -111,6 +119,7 @@
         '<div class="n-row"><span class="n-name">碳水</span><div class="bar"><div class="bar-fill" style="width:' + nutriPct.carb + '%;background:#F2B705"></div></div><span class="n-val">' + p.carb + '/' + tp.carb.value + 'g</span></div>' +
         '<div class="n-row"><span class="n-name">脂肪</span><div class="bar"><div class="bar-fill" style="width:' + nutriPct.fat + '%;background:#F2994A"></div></div><span class="n-val">' + p.fat + '/' + tp.fat.value + 'g</span></div></div>' +
 
+      exerciseModule() +
       '<div class="card"><span class="card-title">明日体重预测</span><div style="font-size:20px;font-weight:700;margin-top:6px">' + predText + '</div>' +
         '<div class="muted small">基于今日摄入与基础代谢估算，仅供参考</div></div>'
 
@@ -124,6 +133,8 @@
     view().querySelectorAll('[data-go]').forEach(function (el) {
       el.onclick = function () { if (el.getAttribute('data-go') === 'settings') openSettings(); else setTab(el.getAttribute('data-go')) }
     })
+    var rr = $('waterRemindRow')
+    if (rr) renderWaterRemindRow(rr)
   }
 
   function mealSuggestion() {
@@ -137,6 +148,48 @@
   function card(title, body, linkText, tabName) {
     return '<div class="card"><div class="row-between"><span class="card-title">' + title + '</span>' +
       (linkText ? '<span class="link" data-go="' + tabName + '">' + linkText + '</span>' : '') + '</div>' + body + '</div>'
+  }
+
+  // 首页「每日塑形 · 科学运动」模块：WHO 建议 + 每日动作清单 + 帕梅拉跟练视频
+  function exerciseModule() {
+    var moves = [
+      { name: '开合跳', reps: '30 秒 × 3 组', note: '热身 + 全身燃脂' },
+      { name: '深蹲', reps: '15 次 × 3 组', note: '练腿臀' },
+      { name: '平板支撑', reps: '30 秒 × 3 组', note: '核心收紧' },
+      { name: '臀桥', reps: '15 次 × 3 组', note: '提臀塑形' },
+      { name: '高抬腿', reps: '30 秒 × 3 组', note: '心肺提升' },
+      { name: '登山跑', reps: '30 秒 × 3 组', note: '腹部燃脂' }
+    ]
+    var moveHtml = moves.map(function (m) {
+      return '<div class="ex-item"><span class="ex-name">' + m.name + '</span>' +
+        '<span class="ex-reps">' + m.reps + '</span>' +
+        '<span class="ex-note">' + m.note + '</span></div>'
+    }).join('')
+    return '<div class="card ex-card">' +
+      '<div class="card-title">💪 每日塑形 · 科学运动</div>' +
+      '<div class="muted small" style="margin:4px 0 2px">WHO 建议：每周 ≥150 分钟中等强度有氧 + ≥2 天力量训练（大肌群）。以下为每日跟练清单：</div>' +
+      '<div class="ex-list">' + moveHtml + '</div>' +
+      '<div class="video-wrap"><iframe src="https://player.bilibili.com/player.html?bvid=BV1vzu36mEVd&page=1&high_quality=1&danmaku=0&autoplay=0" allowfullscreen="true" scrolling="no" frameborder="0"></iframe></div>' +
+      '<a class="video-link" href="https://www.bilibili.com/video/BV1vzu36mEVd" target="_blank" rel="noopener">帕梅拉 40 分钟全身燃脂跟练（点此前往 B站原视频 ↗）</a>' +
+      '</div>'
+  }
+
+  // 首页喝水卡片：根据通知权限渲染「开启提醒」入口或已开启状态
+  function renderWaterRemindRow(el) {
+    if (!('Notification' in window)) {
+      el.innerHTML = '<span class="muted small">当前浏览器不支持系统通知</span>'
+      return
+    }
+    if (Notification.permission === 'granted') {
+      el.innerHTML = settings.waterReminder
+        ? '<span class="muted small">✅ 已开启定时喝水提醒（' + S.WATER_SLOTS.length + ' 个时段）</span>'
+        : '<span class="muted small">提醒已关闭，可在「设置」开启</span>'
+      return
+    }
+    el.innerHTML = '<button class="mini-btn" id="waterAuthBtn">开启喝水提醒 💧</button>' +
+      '<span class="muted small">授权后到点推送系统通知</span>'
+    var b = $('waterAuthBtn')
+    if (b) b.onclick = requestWaterPermission
   }
 
   // ---------- 饮食 ----------
@@ -379,61 +432,9 @@
     $('pReset').onclick = function () { S.setPlan(null); renderPlan(); refreshSprite() }
   }
 
-  // ---------- 分析 ----------
-  function renderAnalysis() {
-    var c = todayContext()
-    var p = c.sum.total, tp = c.tgt
-    var plan = c.plan
-    var pred = A.predict(profile, c.w, p.kcal, 0)
-    var predText = pred.direction === 'down' ? ('↓ 约 ' + pred.low + '~' + pred.high + ' kg')
-      : pred.direction === 'up' ? ('↑ 约 ' + pred.low + '~' + pred.high + ' kg') : ('约 ' + pred.low + '~' + pred.high + ' kg')
-    var budgetKcal = plan ? plan.dailyIntake : tp.kcal.value
-    var pct = {
-      protein: clamp(Math.round(p.protein / tp.protein.value * 100), 0, 120),
-      carb: clamp(Math.round(p.carb / tp.carb.value * 100), 0, 120),
-      fat: clamp(Math.round(p.fat / tp.fat.value * 100), 0, 120),
-      fiber: clamp(Math.round(p.fiber / tp.fiber.value * 100), 0, 120)
-    }
-    var spark = sparkline(S.getWeights().slice(-14).map(function (i) { return i.weight }))
+  // （原「分析」Tab 已移除：明日体重预测已并入首页 renderHome；三大营养素/趋势仍可在饮食/体重页查看）
 
-    view().innerHTML =
-      '<div class="page-title">📊 今日分析</div>' +
-      '<div class="card"><span class="card-title">明日体重预测</span>' +
-        '<div style="font-size:22px;font-weight:800;margin-top:6px">' + predText + '</div>' +
-        '<div class="muted small">基于今日摄入与基础代谢估算</div></div>' +
-      '<div class="card"><span class="card-title">热量预算</span>' +
-        (plan ? '<div class="plan-flag">📋 30天计划预算</div>' : '') +
-        '<div class="row"><span style="font-size:24px;font-weight:800">' + p.kcal + '</span><span class="muted">/ ' + budgetKcal + ' kcal</span></div>' +
-        '<div class="bar"><div class="bar-fill" style="width:' + clamp(Math.round(p.kcal / budgetKcal * 100), 0, 100) + '%;background:' + (p.kcal / budgetKcal > 0.9 ? '#E57373' : '#4E9C96') + '"></div></div></div>' +
-      '<div class="card"><span class="card-title">三大营养素</span>' +
-        '<div class="n-row"><span class="n-name">蛋白质</span><div class="bar"><div class="bar-fill" style="width:' + pct.protein + '%;background:#5BBF8A"></div></div><span class="n-val">' + p.protein + '/' + tp.protein.value + 'g</span></div>' +
-        '<div class="n-row"><span class="n-name">碳水</span><div class="bar"><div class="bar-fill" style="width:' + pct.carb + '%;background:#F2B705"></div></div><span class="n-val">' + p.carb + '/' + tp.carb.value + 'g</span></div>' +
-        '<div class="n-row"><span class="n-name">脂肪</span><div class="bar"><div class="bar-fill" style="width:' + pct.fat + '%;background:#F2994A"></div></div><span class="n-val">' + p.fat + '/' + tp.fat.value + 'g</span></div>' +
-        '<div class="n-row"><span class="n-name">膳食纤维</span><div class="bar"><div class="bar-fill" style="width:' + pct.fiber + '%;background:#4A7FA5"></div></div><span class="n-val">' + p.fiber + '/' + tp.fiber.value + 'g</span></div></div>' +
-      (spark ? '<div class="card"><span class="card-title">体重趋势</span>' + spark + '</div>' : '')
-  }
-
-  // ---------- 健康科普 ----------
-  function renderScience() {
-    var intro = '国家卫健委《成人肥胖食养指南（2024年版）》指出：科学减重靠的是「合理饮食 + 规律运动」的长期习惯，而不是液断、节食或饥饿。极端方式会拉低基础代谢、流失肌肉，停掉后更容易反弹。'
-    function vidCard(title, vid, link) {
-      return '<div class="card">' +
-        '<div class="card-title">' + title + '</div>' +
-        '<div class="video-wrap"><iframe src="https://v.qq.com/iframe/player.html?vid=' + vid + '&tiny=0&auto=0" allowfullscreen scrolling="no" frameborder="0"></iframe></div>' +
-        '<a class="video-link" href="' + link + '" target="_blank" rel="noopener">若播放器未加载，点此前往原视频 ↗</a>' +
-        '</div>'
-    }
-    view().innerHTML =
-      '<div class="page-title">📚 健康科普</div>' +
-      '<div class="card" style="background:#EAF6F2;color:#3C7A75">' + intro + '</div>' +
-      vidCard('🚫 减肥千万不要「液断」', 'j3290hyzk2g', 'https://v.qq.com/x/cover/mzc003uqyvz5hjj/j3290hyzk2g.html') +
-      vidCard('🍽️ 节食能减肥吗？这些减肥误区', 'b07906s7jx7', 'https://v.qq.com/x/page/b07906s7jx7.html') +
-      '<div class="card"><div class="card-title">延伸阅读（官方）</div>' +
-        '<a class="video-link" href="https://tv.cctv.cn/yskd/special/ch/jkzgxl/jkzg38/index.shtml" target="_blank" rel="noopener">央视网《健康中国》· 减肥误区</a>' +
-        '<a class="video-link" href="https://cloud.kepuchina.cn/newSearch/videoDetail?id=7065721111097470976" target="_blank" rel="noopener">科普中国 · 为什么节食减肥会反弹</a>' +
-      '</div>' +
-      '<div class="muted small" style="text-align:center;margin-top:8px">视频来自腾讯视频 / 央视网 / 科普中国等公开科普平台，仅供学习参考</div>'
-  }
+  // （原「健康科普」Tab 已移除：科普视频已移至首页顶部 renderHome 的 sci-hero 卡片，改用 B站嵌入、无广告）
 
   // ============================================================
   //  设置面板
@@ -461,6 +462,7 @@
         '</div></div>' +
         '<div class="field"><label>每日饮水目标 (ml)</label><input id="sW" type="number" value="' + settings.waterGoalMl + '"></div>' +
         '<div class="switch-row"><span>饮水提醒</span><input type="checkbox" id="sWR" ' + (settings.waterReminder ? 'checked' : '') + '></div>' +
+        '<div class="muted small" style="margin-top:-6px">开启后，App 打开时到点推送系统通知提醒喝水（iOS 需先「添加到主屏幕」安装为 App 才会弹通知；关闭 App 后无法后台推送）</div>' +
         '<div class="switch-row"><span>饭点提醒</span><input type="checkbox" id="sMR" ' + (settings.mealReminder ? 'checked' : '') + '></div>' +
         '<div class="switch-row"><span>背景纯音乐</span><input type="checkbox" id="sBM" ' + (settings.bgMusic ? 'checked' : '') + '></div>' +
         '<button class="btn" id="sSave" style="margin-top:8px">保存</button>' +
@@ -477,6 +479,7 @@
       profile = S.saveProfile({ height: h, age: a, targetWeight: t, gender: g, activityFactor: ACTS[ai].v })
       settings = S.saveSettings({ waterGoalMl: parseInt($('sW').value) || 1700, waterReminder: $('sWR').checked, mealReminder: $('sMR').checked, bgMusic: $('sBM').checked })
       if (window.SlimMusic) window.SlimMusic.setEnabled($('sBM').checked)
+      if (settings.waterReminder) requestWaterPermission(); else stopWaterScheduler()
       closeSettings(); renderTab(); refreshSprite(); toast('已保存')
     }
     $('sClear').onclick = function () { if (confirm('确定清空所有体重/饮食/计划数据？')) { S.clearAll(); profile = S.getProfile(); settings = S.getSettings(); closeSettings(); renderTab(); refreshSprite(); toast('已清空') } }
@@ -563,14 +566,13 @@
       if (!c.plan) return '还没有计划哦，去「计划」页定制一个 30 天目标吧！'
       return '计划进行中，每天按 ' + c.plan.dailyIntake + ' kcal 预算吃，精灵陪你达成 ' + c.plan.targetWeight + 'kg！'
     }
-    // home / diet / analysis：用情绪系统
+    // home / diet：用情绪系统
     var mood = A.moodFor(c.sum, c.band, c.tgt)
     return mood.text
   }
 
   function refreshSprite() {
-    var which = (tab === 'home' || tab === 'diet' || tab === 'analysis') ? tab : tab
-    // 计算情绪以更新造型
+    // 计算情绪以更新造型（首页/饮食等均以情绪系统驱动）
     var c = todayContext()
     var mood = A.moodFor(c.sum, c.band, c.tgt)
     setSpriteMood(mood)
@@ -587,8 +589,6 @@
     else if (tab === 'diet') renderDiet()
     else if (tab === 'weight') renderWeight()
     else if (tab === 'plan') renderPlan()
-    else if (tab === 'analysis') renderAnalysis()
-    else if (tab === 'science') renderScience()
     refreshSprite()
   }
   function setTab(name) {
@@ -596,6 +596,70 @@
     document.querySelectorAll('#tabbar .tab').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-tab') === name) })
     renderTab()
     announce()
+  }
+
+  // ============================================================
+  //  喝水提醒（Notification + 定时检查；App 打开时生效）
+  //  说明：纯前端 PWA 无法实现「App 关闭时」的后台推送（那需要 VAPID + 后端推送服务）。
+  //  这里的方案是：App 处于打开/后台保活状态时，到点用系统通知 + 提示音提醒喝水。
+  // ============================================================
+  var waterSchedulerId = null
+  var waterNotified = {}
+  function loadWaterNotified() {
+    try { waterNotified = S.getReminderLog(S.todayStr()) || {} } catch (e) { waterNotified = {} }
+  }
+  function slotDate(slot) {
+    var p = slot.split(':'); var d = new Date()
+    d.setHours(+p[0], +p[1], 0, 0); return d
+  }
+  function fireWaterNotification(slot) {
+    try {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('该喝水啦 💧', {
+          body: '现在是 ' + slot + '，喝一杯温水（约 250ml）有助代谢～',
+          tag: 'slimpix-water-' + slot, icon: 'icon.svg'
+        })
+      }
+    } catch (e) {}
+    if (window.SlimMusic && window.SlimMusic.chime) window.SlimMusic.chime()
+    toast('💧 该喝水啦（' + slot + '）')
+  }
+  function checkWaterReminder() {
+    if (!settings.waterReminder) return
+    if (!('Notification' in window) || Notification.permission !== 'granted') return
+    var now = new Date()
+    S.WATER_SLOTS.forEach(function (slot) {
+      var sd = slotDate(slot)
+      var diffMin = (now - sd) / 60000
+      // 仅在该时段过后 30 分钟内、且今天尚未提醒过时，推送一次
+      if (diffMin >= 0 && diffMin <= 30 && !waterNotified[slot]) {
+        waterNotified[slot] = true
+        S.markReminder(S.todayStr(), slot)
+        fireWaterNotification(slot)
+      }
+    })
+  }
+  function startWaterScheduler() {
+    if (waterSchedulerId) return
+    loadWaterNotified()
+    checkWaterReminder() // 立即检查一次（若已过点且今天未提醒）
+    waterSchedulerId = setInterval(checkWaterReminder, 30000)
+  }
+  function stopWaterScheduler() {
+    if (waterSchedulerId) { clearInterval(waterSchedulerId); waterSchedulerId = null }
+  }
+  function setupWaterReminder() {
+    if (settings.waterReminder && 'Notification' in window && Notification.permission === 'granted') startWaterScheduler()
+  }
+  function requestWaterPermission() {
+    if (!('Notification' in window)) { toast('当前浏览器不支持系统通知'); return }
+    if (Notification.permission === 'granted') { toast('提醒已开启 💧'); startWaterScheduler(); if (tab === 'home') renderHome(); return }
+    function done(p) {
+      if (p === 'granted') { toast('喝水提醒已开启 💧'); startWaterScheduler() }
+      else { toast('未授权，将无法收到提醒') }
+      if (tab === 'home') renderHome()
+    }
+    try { var pr = Notification.requestPermission(function (p) { done(p) }); if (pr && pr.then) pr.then(done) } catch (e) {}
   }
 
   // ============================================================
@@ -656,6 +720,7 @@
     }
     renderTab()
     setTimeout(announce, 600)
+    setupWaterReminder()
 
     // PWA service worker（仅在 http(s) 下注册）
     if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
