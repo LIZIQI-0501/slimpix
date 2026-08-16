@@ -11,7 +11,7 @@
   // ===================== Web Push 配置（关 App 也能提醒） =====================
   // 部署好 push-server 后，把下面 URL 改成你的后端地址（例如 https://slimpix-push.onrender.com）
   // 注意：必须是 https，且未配置前下方占位符会让订阅自动跳过（退化为仅 App 内提醒）
-  var PUSH_SERVER_URL = 'REPLACE_WITH_YOUR_PUSH_SERVER_URL'
+  var PUSH_SERVER_URL = 'https://slimpix-push.onrender.com'
   // VAPID 公钥（与 push-server 的私钥配对，可换成你自己的）
   var VAPID_PUBLIC_KEY = 'BM8WW8C4JhCgSsZTA9LDBxsjgj8c42xkZJH1QR5aq2LOzFrjBAW6s3aXFNu9CKhHd1HEnYnFeVk7iHjUgMJIWkg'
 
