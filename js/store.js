@@ -28,7 +28,7 @@
     height: 160, gender: 'female', age: 27, targetWeight: 51, activityFactor: 1.2
   }
   const DEFAULT_SETTINGS = {
-    waterReminder: true, mealReminder: true, waterGoalMl: 1700
+    waterReminder: true, mealReminder: true, waterGoalMl: 1700, bgMusic: false
   }
 
   function getProfile() {

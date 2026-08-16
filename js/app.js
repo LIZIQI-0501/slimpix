@@ -440,6 +440,7 @@
         '<div class="field"><label>每日饮水目标 (ml)</label><input id="sW" type="number" value="' + settings.waterGoalMl + '"></div>' +
         '<div class="switch-row"><span>饮水提醒</span><input type="checkbox" id="sWR" ' + (settings.waterReminder ? 'checked' : '') + '></div>' +
         '<div class="switch-row"><span>饭点提醒</span><input type="checkbox" id="sMR" ' + (settings.mealReminder ? 'checked' : '') + '></div>' +
+        '<div class="switch-row"><span>背景纯音乐</span><input type="checkbox" id="sBM" ' + (settings.bgMusic ? 'checked' : '') + '></div>' +
         '<button class="btn" id="sSave" style="margin-top:8px">保存</button>' +
         '<button class="btn" id="sClear" style="background:#EEF3F2;color:#8AA09C;margin-top:10px">清空所有数据</button>' +
       '</div></div>'
@@ -452,7 +453,8 @@
       var g = overlay.querySelector('#sG button.on').getAttribute('data-g')
       var ai = parseInt(overlay.querySelector('#sAct button.on').getAttribute('data-act'), 10)
       profile = S.saveProfile({ height: h, age: a, targetWeight: t, gender: g, activityFactor: ACTS[ai].v })
-      settings = S.saveSettings({ waterGoalMl: parseInt($('sW').value) || 1700, waterReminder: $('sWR').checked, mealReminder: $('sMR').checked })
+      settings = S.saveSettings({ waterGoalMl: parseInt($('sW').value) || 1700, waterReminder: $('sWR').checked, mealReminder: $('sMR').checked, bgMusic: $('sBM').checked })
+      if (window.SlimMusic) window.SlimMusic.setEnabled($('sBM').checked)
       closeSettings(); renderTab(); refreshSprite(); toast('已保存')
     }
     $('sClear').onclick = function () { if (confirm('确定清空所有体重/饮食/计划数据？')) { S.clearAll(); profile = S.getProfile(); settings = S.getSettings(); closeSettings(); renderTab(); refreshSprite(); toast('已清空') } }
@@ -608,14 +610,21 @@
       sp.classList.add('hide')
       setTimeout(function () { sp.style.display = 'none' }, 700)
     }
-    if (enter) enter.addEventListener('click', function (e) { e.stopPropagation(); playIntro(); close() })
-    sp.addEventListener('click', function () { playIntro(); close() })
+    function startBgmIfEnabled() {
+      try { if (settings.bgMusic && window.SlimMusic && !window.SlimMusic.isEnabled()) window.SlimMusic.start() } catch (e) {}
+    }
+    if (enter) enter.addEventListener('click', function (e) { e.stopPropagation(); playIntro(); startBgmIfEnabled(); close() })
+    sp.addEventListener('click', function () { playIntro(); startBgmIfEnabled(); close() })
     setTimeout(close, 5000) // 无交互时 5 秒自动进入
   }
 
   function boot() {
     initSprite()
     initSplash()
+    // 首次任意点击兜底启动背景纯音乐（若已开启且尚未播放，满足浏览器自动播放策略）
+    document.addEventListener('pointerdown', function () {
+      try { if (settings.bgMusic && window.SlimMusic && !window.SlimMusic.isEnabled()) window.SlimMusic.start() } catch (e) {}
+    }, { once: true })
     document.querySelectorAll('#tabbar .tab').forEach(function (b) { b.onclick = function () { setTab(b.getAttribute('data-tab')) } })
     $('topbarGear').onclick = openSettings
     // 首次进入提示
