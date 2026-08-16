@@ -38,6 +38,13 @@ npx web-push generate-vapid-keys
 
 GitHub Pages 只能放静态文件、不能跑后端，所以要单独部署这个 Node 服务。任选其一（都有免费额度）：
 
+**方式 A · 一键 Blueprint（推荐，最少点击）**
+1. 注册 [Render](https://render.com) 并授权你的 GitHub。
+2. 控制台 → **New** → **Blueprint** → 选本仓库（含 `push-server/render.yaml`）。
+3. Render 会按 `render.yaml` 自动建好服务（Root Directory=`push-server`、build=`npm install`、start=`npm start`、时区/来源已设好）。点 **Apply** 即可。
+4. 部署完成后，Render 给一个 `https://slimpix-push.onrender.com` 之类的地址 → 跳到「四」填进前端。
+
+**方式 B · 手动 New Web Service**
 - **Render**：New → Web Service → 连这个仓库，Root Directory 填 `push-server`，Build `npm install`、Start `node server.js`。
 - **Railway / Fly.io**：同样指向 `push-server` 目录即可。
 
@@ -52,6 +59,8 @@ GitHub Pages 只能放静态文件、不能跑后端，所以要单独部署这�
 
 > ⚠️ **Render 免费版会休眠**：15 分钟无请求就暂停，导致到点不推送。
 > 解决：用免费服务 [cron-job.org](https://cron-job.org) 每 **5 分钟** 调用一次你的 `https://<你的后端域名>/tick`（同时也保持进程唤醒）。`/tick` 本身就会检查并补发到期未发的饮水提醒。
+>
+> ⚠️ **免费版文件系统重启会清空订阅**：Render 免费实例重启/重新部署后 `subs.json` 会被重置为空。若某天收不到提醒，进 App 里把「饮水提醒」关掉再开启一次即可重新订阅（重新走一遍授权流程）。
 
 ---
 

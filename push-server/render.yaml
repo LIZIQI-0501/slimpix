@@ -1,0 +1,23 @@
+# Render Blueprint —— 一键部署 SlimPix 喝水提醒推送后端
+# 用法：Render 控制台 → New → Blueprint → 关联本仓库（选 web/ 目录为 Root Directory 时，
+# 在「Root Directory」填 push-server，或把此文件放到仓库根并用本配置的路径）。
+# 也可不依赖此文件：手动 New → Web Service → 选仓库 → Root Directory 填 push-server。
+services:
+  - type: web
+    name: slimpix-push
+    runtime: node
+    plan: free
+    region: singapore        # 离用户近一点，延迟低（可选 oregon/frankfurt）
+    branch: main
+    rootDir: push-server      # 关键：只部署 push-server 子目录
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: ALLOWED_ORIGIN
+        value: https://liziqi-0501.github.io
+      - key: TZ
+        value: Asia/Shanghai
+      # PORT 由 Render 自动注入，无需设置；server.js 已 parseInt(process.env.PORT)||3000
+      # VAPID 密钥：本仓库已提交 push-server/vapid-keys.json，server.js 会自动读取，
+      # 无需额外配置；如需保密可改为在此填 VAPID_PUBLIC / VAPID_PRIVATE 环境变量覆盖。
