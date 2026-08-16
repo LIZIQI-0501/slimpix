@@ -277,11 +277,15 @@
     const tdee = tdeeOf(profile, weightKg)
     const defaultCeiling = Math.max(Math.round(tdee - SAFE_DEFICIT), MIN_INTAKE)
     const kcalCeiling = opts && opts.kcalOverride ? opts.kcalOverride : defaultCeiling
+    const lowIntake = !!(opts && opts.lowIntake)
     const proteinG = Math.round(Math.max(weightKg * PROTEIN_PER_KG, PROTEIN_RNI_F))
     const fatG = Math.round(kcalCeiling * FAT_ENERGY_MAX / 9)
     const carbG = Math.round(kcalCeiling * CARB_ENERGY_MAX / 4)
+    const kcalNote = lowIntake
+      ? '你设定的 ' + kcalCeiling + ' kcal 低于 1200 kcal 安全下限，长期可能流失肌肉/降低基础代谢，建议谨慎并关注身体反应'
+      : 'WHO / 中国居民膳食指南2022：在维持热量(TDEE≈' + tdee + 'kcal)基础上制造安全缺口(≤500kcal/天)，且不低于1200kcal安全下限'
     return {
-      kcal: { value: kcalCeiling, type: 'max', note: 'WHO / 中国居民膳食指南2022：在维持热量(TDEE≈' + tdee + 'kcal)基础上制造安全缺口(≤500kcal/天)，且不低于1200kcal安全下限' },
+      kcal: { value: kcalCeiling, type: 'max', note: kcalNote },
       protein: { value: proteinG, type: 'min', note: '中国DRIs2023 女性RNI 0.9g/kg；减脂期按1.2g/kg提高饱腹感、保留瘦体组织(运动营养共识)' },
       fat: { value: fatG, type: 'max', note: 'WHO2023 总脂肪≤30%总能量；中国DRIs2023 AMDR 20~30%' },
       carb: { value: carbG, type: 'max', note: '中国DRIs2023 碳水 AMDR 50~65%' },
@@ -344,18 +348,19 @@
     const safeDeficit = Math.min(requiredDeficitPerDay, SAFE_DEFICIT)
     const autoIntake = Math.max(Math.round(tdee - safeDeficit), MIN_INTAKE)
 
-    // 用户自定义摄入：留空/0 → 用安全缺口推导的默认值；其余按用户值，但不低于安全下限
+    // 用户自定义摄入：留空/0 → 用安全缺口推导的默认值；其余按用户值（尊重用户设定，不强行夹取）
     let dailyIntake = autoIntake
+    let lowIntakeWarn = false
     if (userIntake !== undefined && userIntake !== null && userIntake !== '' && !isNaN(parseFloat(userIntake)) && parseFloat(userIntake) > 0) {
       dailyIntake = Math.round(parseFloat(userIntake))
-      if (dailyIntake < MIN_INTAKE) dailyIntake = MIN_INTAKE
       result.userIntake = dailyIntake
+      if (dailyIntake < MIN_INTAKE) lowIntakeWarn = true
     }
     const actualDeficit = tdee - dailyIntake
     const realisticDays = actualDeficit > 0 ? Math.ceil((needLoseKg * KCAL_PER_KG) / actualDeficit) : 999
     const end = new Date()
     end.setDate(end.getDate() + dur - 1)
-    const t = targets(tgt, profile, { kcalOverride: dailyIntake })
+    const t = targets(tgt, profile, { kcalOverride: dailyIntake, lowIntake: lowIntakeWarn })
     const sampleMenu = []
     const sampleTotal = { kcal: 0, protein: 0, carb: 0, fat: 0, fiber: 0 }
     SAMPLE_TEMPLATE.forEach(it => {
@@ -382,6 +387,7 @@
     result.dailyIntake = dailyIntake
     result.actualDeficit = actualDeficit
     result.realisticDays = realisticDays
+    result.lowIntakeWarn = lowIntakeWarn
     result.feasible30 = realisticDays <= dur
     result.endDate = fmtDate(end)
     result.budget = { kcal: t.kcal.value, protein: t.protein.value, fat: t.fat.value, carb: t.carb.value, fiber: t.fiber.value }

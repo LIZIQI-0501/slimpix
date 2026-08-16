@@ -361,6 +361,7 @@
         '<div class="kv"><span>目标体重</span><span>' + plan.targetWeight + ' kg</span></div>' +
         '<div class="kv"><span>每日热量预算</span><span>' + budget.kcal + ' kcal' + (plan.userIntake ? '（你设定）' : '（自动推导）') + '</span></div>' +
         '<div class="kv"><span>预计达成</span><span>' + plan.realisticDays + ' 天（' + plan.endDate + '）</span></div>' +
+        (plan.lowIntakeWarn ? '<div class="muted small" style="color:#E57373;margin-top:6px">⚠ 你设定的每日摄入低于 1200 kcal 安全下限，长期可能流失肌肉/降低代谢，请谨慎并留意身体反应</div>' : '') +
         (plan.feasible30 ? '' : '<div class="muted small" style="color:#E57373;margin-top:6px">⚠ 按安全缺口，30天内较难达标，建议延长周期或微调目标</div>') +
         '<div class="bar" style="margin-top:10px"><div class="bar-fill" style="width:' + progress + '%;background:#4E9C96"></div></div>' +
         '<div class="muted small" style="text-align:center">已推进 ' + progress + '%</div></div>' +
