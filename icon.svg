@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="65%">
+      <stop offset="0%" stop-color="#5BBF8A"/>
+      <stop offset="100%" stop-color="#3C7A75"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- 小精灵：圆身 + 翅膀 + 小女孩头 -->
+  <g fill="#FFFFFF" stroke="#3C7A75" stroke-width="10" opacity="0.97">
+    <path d="M188 250 C120 215 100 270 140 320 C170 352 200 330 210 300 Z"/>
+    <path d="M324 250 C392 215 412 270 372 320 C342 352 312 330 302 300 Z"/>
+  </g>
+  <path d="M256 250 L320 400 L192 400 Z" fill="#4E9C96"/>
+  <path d="M256 250 L320 400 L292 400 L256 300 Z" fill="#3C7A75" opacity="0.35"/>
+  <circle cx="256" cy="180" r="78" fill="#FFE0C2"/>
+  <circle cx="226" cy="168" r="22" fill="#5B3A29"/>
+  <circle cx="286" cy="168" r="22" fill="#5B3A29"/>
+  <path d="M210 180 a46 46 0 0 1 92 0 q-46 -32 -92 0 Z" fill="#5B3A29"/>
+  <path d="M256 128 l-22 -16 0 32 z M256 128 l22 -16 0 32 z" fill="#4E9C96"/>
+  <circle cx="256" cy="128" r="8" fill="#4E9C96"/>
+</svg>

@@ -1,0 +1,25 @@
+# Netlify 部署配置（静态站点，无需构建）
+# 本文件位于 web/ 根目录：发布目录就是本文件夹本身。
+# 用法（二选一）：
+#   1. Netlify Drop：直接把 web/ 整个文件夹拖到 https://app.netlify.com/drop
+#      —— 配置会自动被读取，发布目录 = 当前文件夹。
+#   2. 连接 Git 仓库：在 Netlify 里连仓库后，把 "Base directory" 设为 web，
+#      "Build command" 留空，"Publish directory" 设为 web（本配置已声明）。
+
+[build]
+  # 站点根目录就是本文件夹
+  publish = "."
+  # 纯静态，没有任何构建步骤
+  command = "echo 'no build needed - static site'"
+
+# 头信息：确保 Service Worker 不被缓存（PWA 更新生效）
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+# 让 SPA 在刷新时不会 404（虽然本应用是单页且不依赖路由，这里兜底）
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
