@@ -30,6 +30,62 @@
   <div id="settingsOverlay" class="overlay hidden"></div>
   <div id="toast" class="toast hidden"></div>
 
+  <!-- ===== 开屏 Splash（渐变动效 + 健康食物大碗 + 语音鼓励） ===== -->
+  <div id="splash">
+    <div class="splash-glow"></div>
+    <div class="splash-inner">
+      <div class="splash-bowl">
+        <svg viewBox="0 0 300 250" role="img" aria-label="一碗健康食物：香蕉、鸡蛋、西红柿与蔬菜" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="150" cy="216" rx="86" ry="14" fill="rgba(0,0,0,.12)"/>
+          <!-- 碗身 -->
+          <path d="M48 150 Q150 268 252 150 Z" fill="#eaf5f2" stroke="#cfe7e0" stroke-width="3"/>
+          <!-- 碗口 -->
+          <ellipse cx="150" cy="150" rx="102" ry="26" fill="#ffffff" stroke="#4E9C96" stroke-width="6"/>
+          <ellipse cx="150" cy="150" rx="86" ry="18" fill="#f4faf8"/>
+          <!-- 蒸汽 -->
+          <path class="steam s1" d="M128 96 q7 -10 0 -20 q-7 -10 0 -20" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="3" stroke-linecap="round"/>
+          <path class="steam s2" d="M172 90 q7 -10 0 -20 q-7 -10 0 -20" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="3" stroke-linecap="round"/>
+          <!-- 西兰花（后中） -->
+          <g class="food f1">
+            <rect x="144" y="116" width="12" height="28" rx="5" fill="#caa46a"/>
+            <circle cx="150" cy="102" r="19" fill="#4caf50"/>
+            <circle cx="131" cy="110" r="13" fill="#5bbf5f"/>
+            <circle cx="169" cy="110" r="13" fill="#5bbf5f"/>
+            <circle cx="150" cy="90" r="13" fill="#69cf6d"/>
+            <circle cx="137" cy="96" r="9" fill="#74d97a"/>
+            <circle cx="163" cy="96" r="9" fill="#74d97a"/>
+          </g>
+          <!-- 西红柿（左） -->
+          <g class="food f2">
+            <circle cx="103" cy="140" r="24" fill="#ff6b5e"/>
+            <circle cx="95" cy="132" r="7" fill="rgba(255,255,255,.45)"/>
+            <path d="M103 118 q-9 -1 -11 -11 q11 0 13 9 q3 -11 13 -7 q-1 11 -15 9z" fill="#43a047"/>
+          </g>
+          <!-- 鸡蛋（右，煎蛋俯视） -->
+          <g class="food f3">
+            <path d="M176 132 q34 -4 38 18 q3 24 -20 28 q-34 4 -36 -20 q-2 -22 18 -26z" fill="#ffffff" stroke="#eef2f0" stroke-width="2"/>
+            <circle cx="187" cy="150" r="11" fill="#ffc83d"/>
+            <circle cx="183" cy="146" r="4" fill="#ffe08a"/>
+          </g>
+          <!-- 香蕉（前左） -->
+          <g class="food f4">
+            <path d="M70 176 q-30 0 -36 -30 q0 -14 13 -15 q9 -1 11 9 q3 20 26 28 q-9 8 -14 8z" fill="#ffd23f" stroke="#e3b800" stroke-width="2"/>
+          </g>
+          <!-- 绿叶菜（前右） -->
+          <g class="food f5">
+            <path d="M198 176 q24 -16 34 -4 q-12 16 -34 6z" fill="#5bbf5f"/>
+            <path d="M190 184 q20 -6 34 6 q-16 12 -34 -2z" fill="#69cf6d"/>
+          </g>
+        </svg>
+      </div>
+      <h1 class="splash-title">Fiona的减肥记录仪</h1>
+      <p class="splash-sub">均衡营养 · 适量而食 · 慢慢变瘦</p>
+      <button id="splashEnter" class="splash-enter" type="button">进入 ▶</button>
+      <p class="splash-hint">点击任意处 · 开启语音鼓励</p>
+      <div class="splash-progress"><i></i></div>
+    </div>
+  </div>
+
   <script src="js/sprite-data.js"></script>
   <script src="js/algo.js"></script>
   <script src="js/store.js"></script>

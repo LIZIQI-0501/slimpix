@@ -566,8 +566,53 @@
   // ============================================================
   //  启动
   // ============================================================
+  // 开屏：渐变动效 + 健康食物大碗 + 点击「进入」播放提示音与语音鼓励
+  function initSplash() {
+    var sp = document.getElementById('splash')
+    if (!sp) return
+    var enter = document.getElementById('splashEnter')
+    var done = false
+    var TTS_TEXT = '嗨，欢迎来到菲奥娜的减肥记录仪。每一口健康的食物，都是给未来更好的自己投票。今天，也好好吃饭，慢慢变瘦吧。'
+    function playIntro() {
+      try {
+        var AC = window.AudioContext || window.webkitAudioContext
+        if (AC) {
+          var ac = new AC()
+          if (ac.resume) ac.resume()
+          var t0 = ac.currentTime
+          ;[523.25, 659.25, 783.99].forEach(function (f, i) {
+            var o = ac.createOscillator(), g = ac.createGain()
+            o.type = 'sine'; o.frequency.value = f
+            var s = t0 + i * 0.13
+            g.gain.setValueAtTime(0.0001, s)
+            g.gain.linearRampToValueAtTime(0.18, s + 0.02)
+            g.gain.exponentialRampToValueAtTime(0.0001, s + 0.5)
+            o.connect(g).connect(ac.destination)
+            o.start(s); o.stop(s + 0.55)
+          })
+        }
+        if (window.speechSynthesis) {
+          window.speechSynthesis.cancel()
+          var u = new SpeechSynthesisUtterance(TTS_TEXT)
+          u.lang = 'zh-CN'; u.rate = 1; u.pitch = 1.05; u.volume = 1
+          window.speechSynthesis.speak(u)
+        }
+      } catch (e) {}
+    }
+    function close() {
+      if (done) return
+      done = true
+      sp.classList.add('hide')
+      setTimeout(function () { sp.style.display = 'none' }, 700)
+    }
+    if (enter) enter.addEventListener('click', function (e) { e.stopPropagation(); playIntro(); close() })
+    sp.addEventListener('click', function () { playIntro(); close() })
+    setTimeout(close, 5000) // 无交互时 5 秒自动进入
+  }
+
   function boot() {
     initSprite()
+    initSplash()
     document.querySelectorAll('#tabbar .tab').forEach(function (b) { b.onclick = function () { setTab(b.getAttribute('data-tab')) } })
     $('topbarGear').onclick = openSettings
     // 首次进入提示

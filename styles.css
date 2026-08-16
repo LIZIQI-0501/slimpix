@@ -184,3 +184,48 @@ body {
 
 /* sparkline */
 .spark { display: block; margin: 6px auto 2px; }
+
+/* ===== 开屏 Splash ===== */
+#splash {
+  position: fixed; inset: 0; z-index: 1000;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  overflow: hidden; color: #fff; text-align: center;
+  background: linear-gradient(135deg, #6fc3a8, #4E9C96, #3a8f8a, #7fd0b6, #4E9C96);
+  background-size: 300% 300%; animation: sgrad 12s ease infinite;
+  font-family: inherit;
+  transition: opacity .6s ease;
+}
+#splash.hide { opacity: 0; pointer-events: none; }
+.splash-glow {
+  position: absolute; width: 150vmax; height: 150vmax; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.18), transparent 60%);
+  top: -55vmax; left: -25vmax; animation: sglow 14s ease-in-out infinite;
+}
+.splash-inner { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; padding: 0 22px; }
+.splash-bowl { width: 240px; max-width: 64vw; margin-bottom: 6px; filter: drop-shadow(0 16px 24px rgba(0,0,0,.20)); animation: breathe 5s ease-in-out infinite; }
+.splash-bowl svg { width: 100%; height: auto; display: block; }
+.splash-title { font-size: 26px; font-weight: 800; margin: 18px 0 8px; letter-spacing: 1px; text-shadow: 0 2px 12px rgba(0,0,0,.18); }
+.splash-sub { font-size: 14px; opacity: .94; margin: 0 0 26px; letter-spacing: 2px; }
+.splash-enter {
+  padding: 13px 36px; border: none; border-radius: 999px;
+  background: #fff; color: #2f8f86; font-size: 17px; font-weight: 800; cursor: pointer;
+  box-shadow: 0 10px 24px rgba(0,0,0,.20); transition: transform .12s ease;
+}
+.splash-enter:active { transform: scale(.95); }
+.splash-hint { font-size: 12px; opacity: .8; margin: 14px 0 0; }
+.splash-progress { width: 168px; height: 5px; border-radius: 5px; background: rgba(255,255,255,.28); margin-top: 24px; overflow: hidden; }
+.splash-progress i { display: block; height: 100%; width: 0; background: #fff; border-radius: 5px; animation: pfill 4.6s linear forwards; }
+
+/* 食物轻轻浮动 + 呼吸 + 蒸汽 */
+.food { transform-box: fill-box; transform-origin: center; animation: bob 3.2s ease-in-out infinite; }
+.food.f2 { animation-delay: .25s } .food.f3 { animation-delay: .5s }
+.food.f4 { animation-delay: .75s } .food.f5 { animation-delay: 1s }
+.steam { transform-box: fill-box; transform-origin: bottom; animation: steam 3s ease-in-out infinite; opacity: .6; }
+.steam.s2 { animation-delay: 1.2s }
+
+@keyframes sgrad { 0% { background-position: 0% 50% } 50% { background-position: 100% 50% } 100% { background-position: 0% 50% } }
+@keyframes sglow { 0%,100% { transform: translate(0,0) } 50% { transform: translate(6vmax, 4vmax) } }
+@keyframes breathe { 0%,100% { transform: scale(1) } 50% { transform: scale(1.035) } }
+@keyframes bob { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-7px) } }
+@keyframes steam { 0% { opacity: 0; transform: translateY(6px) } 40% { opacity: .7 } 100% { opacity: 0; transform: translateY(-10px) } }
+@keyframes pfill { to { width: 100% } }
