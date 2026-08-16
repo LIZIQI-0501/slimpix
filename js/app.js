@@ -471,14 +471,11 @@
     tx = sx; ty = sy
     place()
 
-    // 触点跟随（鼠标/触摸）：移动时把目标指向触点
+    // 仅拖拽时跟随触点：非拖拽时精灵停在原来位置（带呼吸动画），不挡按钮
     document.addEventListener('pointermove', function (e) {
+      if (!dragging) return
       var px = e.clientX, py = e.clientY
-      if (dragging) {
-        sx = clamp(px - dragOX, 0, W - sSize); sy = clamp(py - dragOY, 0, H - sSize); moved = true; place()
-      } else {
-        tx = clamp(px - sSize / 2, 0, W - sSize); ty = clamp(py - sSize / 2, 0, H - sSize)
-      }
+      sx = clamp(px - dragOX, 0, window.innerWidth - sSize); sy = clamp(py - dragOY, 0, window.innerHeight - sSize); moved = true; place()
     })
     // 按下精灵：进入拖拽
     spriteEl.addEventListener('pointerdown', function (e) {
