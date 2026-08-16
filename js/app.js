@@ -870,6 +870,24 @@
       }).then(function () { S.setPush({ subscribed: false, endpoint: null }) }).catch(function () {})
     } catch (e) {}
   }
+  // 静默兜底：本地曾订阅(subscribed=true)但后端可能因 Render 重启丢了记录时，
+  // 重新把设备现有 PushSubscription 推给后端 /subscribe（幂等），修复丢订阅。
+  function ensureSubscribed() {
+    var st = S.getPush()
+    if (!st.subscribed) return
+    if (!pushEnabled()) return
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+    try {
+      navigator.serviceWorker.ready.then(function (reg) {
+        return reg.pushManager.getSubscription()
+      }).then(function (sub) {
+        if (!sub) { S.setPush({ subscribed: false, endpoint: null }); return } // OS 层已取消，清本地标记
+        return fetch(PUSH_SERVER_URL + '/subscribe', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub })
+        }).catch(function () {})
+      }).catch(function (err) { console.warn('ensureSubscribed error', err) })
+    } catch (e) {}
+  }
 
   function requestWaterPermission() {
     if (!('Notification' in window)) { toast('当前浏览器不支持系统通知'); return }
@@ -949,6 +967,8 @@
     if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       navigator.serviceWorker.register('sw.js').catch(function () {})
     }
+    // 静默兜底：若此前已订阅但后端记录丢失（Render 重启），重新注册订阅
+    ensureSubscribed()
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot)
