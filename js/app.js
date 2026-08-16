@@ -95,7 +95,7 @@
 
       card('今日体重', lw ? ('<div class="row"><span class="big-num">' + lw.weight + '</span><span class="unit">kg</span>' +
         (S.getWeights().length > 1 ? '' : '') + '</div>') : '<div class="muted">今天还没称重，去「体重」页记录～</div>',
-        '去记录 ›', function () { setTab('weight') }) +
+        '去记录 ›', 'weight') +
 
       '<div class="card"><div class="row-between"><span class="card-title">💧 今日喝水</span><span class="link" data-go="settings">目标 ' + waterGoal + 'ml ›</span></div>' +
         '<div class="water-total">' + waterMl + ' / ' + waterGoal + ' ml</div>' +
@@ -134,9 +134,9 @@
     return '🌙 晚餐清淡些，睡前别吃宵夜哦'
   }
 
-  function card(title, body, linkText, linkFn) {
+  function card(title, body, linkText, tabName) {
     return '<div class="card"><div class="row-between"><span class="card-title">' + title + '</span>' +
-      (linkText ? '<span class="link" data-link="1">' + linkText + '</span>' : '') + '</div>' + body + '</div>'
+      (linkText ? '<span class="link" data-go="' + tabName + '">' + linkText + '</span>' : '') + '</div>' + body + '</div>'
   }
 
   // ---------- 饮食 ----------
