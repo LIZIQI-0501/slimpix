@@ -308,8 +308,8 @@
       '<div class="card"><div class="row-between"><span class="card-title">' + mealLabels[dietState.meal] + '已记录</span><span class="muted">' + mealKcal + ' kcal</span></div>' +
         '<div id="mealList">' + listHtml + '</div></div>' +
       '<div class="card recognize-card"><div class="card-title">🍽 自由输入识别</div>' +
-        '<div class="rec-row"><input class="search-input" id="recInput" placeholder="描述你吃了什么，如：中午吃了红烧肉和半碗米饭">' +
-        '<button class="btn rec-btn" id="recBtn">识别</button></div>' +
+        '<input class="search-input rec-input" id="recInput" placeholder="描述你吃了什么，如：中午吃了红烧肉和半碗米饭">' +
+        '<button class="btn rec-btn" id="recBtn">识别</button>' +
         '<div id="recResult"></div></div>' +
       '<div class="search-bar"><input class="search-input" id="dietSearch" placeholder="搜索食物，如 鸡胸肉" value="' + dietState.keyword + '"></div>' +
       '<div class="cats">' + catsHtml + '</div>' +

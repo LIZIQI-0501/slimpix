@@ -99,9 +99,8 @@ body {
 
 /* 饮食：自由输入识别 */
 .recognize-card { background: linear-gradient(180deg,#F4FBF8,#FFFFFF); }
-.rec-row { display: flex; gap: 8px; margin-top: 8px; }
-.rec-row .search-input { flex: 1; }
-.rec-btn { white-space: nowrap; padding: 0 16px; }
+.rec-input { display: block; width: 100%; margin-top: 8px; }
+.rec-btn { margin-top: 10px; }
 #recResult { margin-top: 10px; }
 .rec-item { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
 .rec-item:last-of-type { border-bottom: none; }
