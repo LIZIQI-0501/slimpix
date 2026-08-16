@@ -119,7 +119,7 @@
         '<div class="n-row"><span class="n-name">碳水</span><div class="bar"><div class="bar-fill" style="width:' + nutriPct.carb + '%;background:#F2B705"></div></div><span class="n-val">' + p.carb + '/' + tp.carb.value + 'g</span></div>' +
         '<div class="n-row"><span class="n-name">脂肪</span><div class="bar"><div class="bar-fill" style="width:' + nutriPct.fat + '%;background:#F2994A"></div></div><span class="n-val">' + p.fat + '/' + tp.fat.value + 'g</span></div></div>' +
 
-      exerciseModule() +
+      exerciseRecordCard() +
       '<div class="card"><span class="card-title">明日体重预测</span><div style="font-size:20px;font-weight:700;margin-top:6px">' + predText + '</div>' +
         '<div class="muted small">基于今日摄入与基础代谢估算，仅供参考</div></div>'
 
@@ -133,8 +133,40 @@
     view().querySelectorAll('[data-go]').forEach(function (el) {
       el.onclick = function () { if (el.getAttribute('data-go') === 'settings') openSettings(); else setTab(el.getAttribute('data-go')) }
     })
+    view().querySelectorAll('[data-exid]').forEach(function (el) {
+      el.onclick = function () {
+        S.toggleExercise(S.todayStr(), el.getAttribute('data-exid'))
+        renderHome()
+      }
+    })
     var rr = $('waterRemindRow')
     if (rr) renderWaterRemindRow(rr)
+  }
+
+  // 首页「今日运动」实时完成记录卡：与喝水/饮食同构，点动作打卡，去记录跳运动 Tab
+  function exerciseRecordCard() {
+    var plan = A.dailyExercisePlan(profile, currentWeight())
+    var adv = plan.advice
+    var moves = plan.moves
+    var doneMap = S.getExercises(S.todayStr())
+    var done = moves.filter(function (m) { return doneMap[m.id] }).length
+    var total = moves.length
+    var pct = total ? Math.round(done / total * 100) : 0
+    var phaseColor = adv.phase === '减脂强化期' ? '#E57373' : adv.phase === '塑形进阶期' ? '#F2994A' : '#5BBF8A'
+    var top = moves.slice(0, 4)
+    var miniHtml = top.map(function (m) {
+      var on = !!doneMap[m.id]
+      return '<span class="ex-chip ' + (on ? 'on' : '') + '" data-exid="' + m.id + '">' + (on ? '✓ ' : '') + m.name + '</span>'
+    }).join('')
+    return '<div class="card ex-home">' +
+      '<div class="row-between"><span class="card-title">💪 今日运动 · ' + adv.phase + '</span><span class="link" data-go="exercise">去记录 ›</span></div>' +
+      '<div class="row"><span class="ex-done" style="font-size:24px;font-weight:800;color:' + phaseColor + '">' + done + '</span>' +
+        '<span class="muted">/ ' + total + ' 项完成</span>' +
+        '<span class="muted small" style="margin-left:auto;text-align:right">有氧' + adv.dailyAerobicMin + '′<br>+力量' + adv.dailyStrengthMin + '′</span></div>' +
+      '<div class="bar"><div class="bar-fill" style="width:' + pct + '%;background:' + phaseColor + '"></div></div>' +
+      '<div class="ex-chips">' + miniHtml + '</div>' +
+      '<div class="muted small">点动作打卡（' + adv.standard.split(' / ')[0] + ' 推荐 · 当前体脂约 ' + adv.currentBF + '% / 目标 ' + adv.targetBF + '%）</div>' +
+    '</div>'
   }
 
   function mealSuggestion() {
@@ -150,28 +182,56 @@
       (linkText ? '<span class="link" data-go="' + tabName + '">' + linkText + '</span>' : '') + '</div>' + body + '</div>'
   }
 
-  // 首页「每日塑形 · 科学运动」模块：WHO 建议 + 每日动作清单 + 帕梅拉跟练视频
-  function exerciseModule() {
-    var moves = [
-      { name: '开合跳', reps: '30 秒 × 3 组', note: '热身 + 全身燃脂' },
-      { name: '深蹲', reps: '15 次 × 3 组', note: '练腿臀' },
-      { name: '平板支撑', reps: '30 秒 × 3 组', note: '核心收紧' },
-      { name: '臀桥', reps: '15 次 × 3 组', note: '提臀塑形' },
-      { name: '高抬腿', reps: '30 秒 × 3 组', note: '心肺提升' },
-      { name: '登山跑', reps: '30 秒 × 3 组', note: '腹部燃脂' }
-    ]
+  // 运动 Tab：依据体重 + 目标体脂率给出的每日方案（权威标准）+ 实时打卡 + 帕梅拉跟练
+  function renderExercise() {
+    var w = currentWeight()
+    var plan = A.dailyExercisePlan(profile, w)
+    var adv = plan.advice
+    var moves = plan.moves
+    var doneMap = S.getExercises(S.todayStr())
+    var done = moves.filter(function (m) { return doneMap[m.id] }).length
+    var total = moves.length
+    var pct = total ? Math.round(done / total * 100) : 0
+    var phaseColor = adv.phase === '减脂强化期' ? '#E57373' : adv.phase === '塑形进阶期' ? '#F2994A' : '#5BBF8A'
     var moveHtml = moves.map(function (m) {
-      return '<div class="ex-item"><span class="ex-name">' + m.name + '</span>' +
-        '<span class="ex-reps">' + m.reps + '</span>' +
+      var on = !!doneMap[m.id]
+      return '<div class="ex-row ' + (on ? 'done' : '') + '" data-exid="' + m.id + '">' +
+        '<span class="ex-check">' + (on ? '✓' : '') + '</span>' +
+        '<span class="ex-name">' + m.name + '</span>' +
+        '<span class="ex-reps">' + m.amount + '</span>' +
         '<span class="ex-note">' + m.note + '</span></div>'
     }).join('')
-    return '<div class="card ex-card">' +
-      '<div class="card-title">💪 每日塑形 · 科学运动</div>' +
-      '<div class="muted small" style="margin:4px 0 2px">WHO 建议：每周 ≥150 分钟中等强度有氧 + ≥2 天力量训练（大肌群）。以下为每日跟练清单：</div>' +
-      '<div class="ex-list">' + moveHtml + '</div>' +
-      '<div class="video-wrap"><iframe src="https://player.bilibili.com/player.html?bvid=BV1vzu36mEVd&page=1&high_quality=1&danmaku=0&autoplay=0" allowfullscreen="true" scrolling="no" frameborder="0"></iframe></div>' +
-      '<a class="video-link" href="https://www.bilibili.com/video/BV1vzu36mEVd" target="_blank" rel="noopener">帕梅拉 40 分钟全身燃脂跟练（点此前往 B站原视频 ↗）</a>' +
+
+    view().innerHTML =
+      '<div class="page-title">🏃 每日运动</div>' +
+      '<div class="card"><div class="row-between"><span class="card-title">今日完成进度</span>' +
+        '<span class="badge-ex ' + (pct === 100 ? 'done' : '') + '">' + done + '/' + total + '</span></div>' +
+        '<div class="bar" style="margin-top:8px"><div class="bar-fill" style="width:' + pct + '%;background:' + phaseColor + '"></div></div>' +
+        (pct === 100 ? '<div class="muted small" style="color:#5BBF8A;margin-top:6px">🎉 今日运动达标，精灵为你点赞！</div>'
+          : '<div class="muted small" style="margin-top:6px">点下方动作逐项打卡，完成全部即达标</div>') +
+      '</div>' +
+
+      '<div class="card ex-card">' +
+        '<div class="card-title">💡 今日运动方案 · <span style="color:' + phaseColor + '">' + adv.phase + '</span></div>' +
+        '<div class="muted small" style="margin:4px 0 2px">依据 ' + adv.standard + '：每周 ≥' + adv.weeklyAerobicMin + ' 分钟中等有氧（或 ≥' + adv.weeklyVigorousMin + ' 分钟高强度）+ ≥' + adv.strengthDays + ' 天力量训练（主要肌群）</div>' +
+        '<div class="ex-summary">今日建议：有氧 ~' + adv.dailyAerobicMin + ' 分钟 + 力量 ~' + adv.dailyStrengthMin + ' 分钟（' + adv.trainingDays + ' 天 / 周）</div>' +
+        '<div class="muted small">当前体脂率约 <b>' + adv.currentBF + '%</b> · 目标 <b>' + adv.targetBF + '%</b> · 差 ' + adv.gap + '%</div>' +
+        '<div class="muted small" style="margin-top:2px">' + adv.note + '</div>' +
+        '<div class="ex-list">' + moveHtml + '</div>' +
+        '<div class="video-wrap"><iframe src="https://player.bilibili.com/player.html?bvid=BV1vzu36mEVd&page=1&high_quality=1&danmaku=0&autoplay=0" allowfullscreen="true" scrolling="no" frameborder="0"></iframe></div>' +
+        '<a class="video-link" href="https://www.bilibili.com/video/BV1vzu36mEVd" target="_blank" rel="noopener">帕梅拉 40 分钟全身燃脂跟练（点此前往 B站原视频 ↗）</a>' +
+      '</div>' +
+
+      '<div class="card"><div class="card-title">📌 为什么这样安排</div>' +
+        '<div class="muted small">有氧（开合跳 / 高抬腿 / 登山跑）提升心率、增加每日消耗，是制造热量缺口的主力；力量训练（深蹲 / 臀桥 / 平板等）保住并增长瘦体组织，让你在减脂时线条更紧致、基础代谢不塌。两者结合是 WHO 与中国运动指南一致推荐的科学减脂方式。体脂率越接近目标，方案会逐步从「有氧优先」转向「力量精雕」以维持成果、防止反弹。</div>' +
       '</div>'
+
+    view().querySelectorAll('[data-exid]').forEach(function (el) {
+      el.onclick = function () {
+        S.toggleExercise(S.todayStr(), el.getAttribute('data-exid'))
+        renderExercise(); refreshSprite()
+      }
+    })
   }
 
   // 首页喝水卡片：根据通知权限渲染「开启提醒」入口或已开启状态
@@ -378,15 +438,23 @@
         '<div class="card"><div class="card-title">制定你的计划</div>' +
           '<div class="field"><label>当前体重 (kg)</label><input id="pCur" type="number" value="' + curW + '"></div>' +
           '<div class="field"><label>目标体重 (kg)</label><input id="pTgt" type="number" value="' + profile.targetWeight + '"></div>' +
+          '<div class="field"><label>目标体脂率 (%)</label><input id="pTbf" type="number" value="' + (profile.targetBodyFat != null ? profile.targetBodyFat : (profile.gender === 'female' ? 24 : 18)) + '"></div>' +
+          '<div class="field"><label>当前体脂率 (%) 选填</label><input id="pCbf" type="number" value="' + (profile.currentBodyFat != null ? profile.currentBodyFat : '') + '" placeholder="留空按身高体重估算"></div>' +
           '<div class="field"><label>周期 (天)</label><input id="pDur" type="number" value="30"></div>' +
           '<div class="field"><label>每日摄入热量 (kcal)</label><input id="pKcal" type="number" value="' + safeMax + '" placeholder="留空按安全缺口自动"></div>' +
           '<div class="muted small" style="margin-top:-4px">推荐范围 ' + safeMin + '~' + tdeeNow + ' kcal（你的 TDEE≈' + tdeeNow + '），不低于 1200 kcal 安全下限；超过 TDEE 不会掉秤</div>' +
           '<button class="btn" id="pBuild" style="margin-top:14px">生成计划</button>' +
-          '<div class="muted small" style="margin-top:10px">基于 Mifflin-St Jeor 基础代谢与 7700kcal≈1kg 脂肪，安全缺口 ≤500kcal/天</div>' +
+          '<div class="muted small" style="margin-top:10px">基于 Mifflin-St Jeor 基础代谢与 7700kcal≈1kg 脂肪，安全缺口 ≤500kcal/天；运动建议依据 WHO/ACSM 与你的目标体脂率</div>' +
         '</div>'
       $('pBuild').onclick = function () {
         var cur = parseFloat($('pCur').value), tgt = parseFloat($('pTgt').value), dur = parseInt($('pDur').value) || 30
         if (!cur || !tgt) { toast('请填写完整'); return }
+        var tbf = parseFloat($('pTbf').value)
+        if (!isFinite(tbf) || tbf <= 0) { toast('请填写目标体脂率'); return }
+        var cbfRaw = $('pCbf').value
+        var cbf = cbfRaw === '' || cbfRaw == null ? null : parseFloat(cbfRaw)
+        if (cbf !== null && (!isFinite(cbf) || cbf <= 0)) { toast('当前体脂率请填正数或留空'); return }
+        profile = S.saveProfile({ targetBodyFat: tbf, currentBodyFat: cbf })
         var kcalRaw = $('pKcal').value
         var userIntake = kcalRaw === '' || kcalRaw === null ? null : parseFloat(kcalRaw)
         if (userIntake !== null && (!isFinite(userIntake) || userIntake <= 0)) { toast('每日摄入热量请填正数或留空'); return }
@@ -426,6 +494,17 @@
         '<div class="n-row"><span class="n-name">脂肪</span><div class="bar"></div><span class="n-val">' + budget.fat + ' g</span></div>' +
         '<div class="n-row"><span class="n-name">膳食纤维</span><div class="bar"></div><span class="n-val">' + budget.fiber + ' g</span></div></div>' +
 
+      '<div class="card"><div class="card-title">🏃 运动建议（每周）</div>' +
+        (plan.exerciseAdvice ? (function (ea) {
+          return '<div class="ex-summary">阶段：<b>' + ea.phase + '</b>（当前体脂约 ' + ea.currentBF + '% · 目标 ' + ea.targetBF + '%）</div>' +
+            '<div class="n-row"><span class="n-name">中等有氧</span><div class="bar"></div><span class="n-val">≥' + ea.weeklyAerobicMin + ' 分</span></div>' +
+            '<div class="n-row"><span class="n-name">高强度(等效)</span><div class="bar"></div><span class="n-val">≥' + ea.weeklyVigorousMin + ' 分</span></div>' +
+            '<div class="n-row"><span class="n-name">力量训练</span><div class="bar"></div><span class="n-val">≥' + ea.strengthDays + ' 天</span></div>' +
+            '<div class="muted small" style="margin-top:6px">每日拆分：有氧 ~' + ea.dailyAerobicMin + ' 分钟 + 力量 ~' + ea.dailyStrengthMin + ' 分钟（' + ea.trainingDays + ' 天 / 周）</div>' +
+            '<div class="muted small" style="margin-top:2px">' + ea.note + '</div>' +
+            '<div class="muted small" style="margin-top:2px">依据：' + ea.standard + '</div>'
+        })(plan.exerciseAdvice) : '<div class="muted small">未生成运动建议</div>') + '</div>' +
+
       '<div class="card"><div class="card-title">膳食宝塔分配</div>' + distHtml + '</div>' +
       '<div class="card"><div class="card-title">示意一日菜单</div>' + menuHtml + '</div>' +
       '<button class="btn" id="pReset" style="background:#EEF3F2;color:#8AA09C">重新制定计划</button>'
@@ -446,6 +525,8 @@
   function openSettings() {
     profile = S.getProfile(); settings = S.getSettings()
     var actIdx = ACTS.findIndex(function (a) { return a.v === profile.activityFactor }); if (actIdx < 0) actIdx = 0
+    var tbf = profile.targetBodyFat != null ? profile.targetBodyFat : (profile.gender === 'female' ? 24 : 18)
+    var cbf = profile.currentBodyFat != null ? profile.currentBodyFat : ''
     var overlay = $('settingsOverlay')
     overlay.classList.remove('hidden')
     overlay.innerHTML =
@@ -454,6 +535,8 @@
         '<div class="field"><label>身高 (cm)</label><input id="sH" type="number" value="' + profile.height + '"></div>' +
         '<div class="field"><label>年龄</label><input id="sA" type="number" value="' + profile.age + '"></div>' +
         '<div class="field"><label>目标体重 (kg)</label><input id="sT" type="number" value="' + profile.targetWeight + '"></div>' +
+        '<div class="field"><label>目标体脂率 (%)</label><input id="sTBF" type="number" value="' + tbf + '"></div>' +
+        '<div class="field"><label>当前体脂率 (%) 选填</label><input id="sCBF" type="number" value="' + cbf + '" placeholder="留空按身高体重估算"></div>' +
         '<div class="field"><label>性别</label><div class="seg" id="sG">' +
           '<button data-g="female" class="' + (profile.gender === 'female' ? 'on' : '') + '">女</button>' +
           '<button data-g="male" class="' + (profile.gender === 'male' ? 'on' : '') + '">男</button></div></div>' +
@@ -474,9 +557,14 @@
     $('sSave').onclick = function () {
       var h = parseFloat($('sH').value), a = parseInt($('sA').value), t = parseFloat($('sT').value)
       if (!h || !a || !t) { toast('请填写完整'); return }
+      var tbf = parseFloat($('sTBF').value)
+      if (!isFinite(tbf) || tbf <= 0) { toast('请填写目标体脂率'); return }
+      var cbfRaw = $('sCBF').value
+      var cbf = cbfRaw === '' || cbfRaw == null ? null : parseFloat(cbfRaw)
+      if (cbf !== null && (!isFinite(cbf) || cbf <= 0)) { toast('当前体脂率请填正数或留空'); return }
       var g = overlay.querySelector('#sG button.on').getAttribute('data-g')
       var ai = parseInt(overlay.querySelector('#sAct button.on').getAttribute('data-act'), 10)
-      profile = S.saveProfile({ height: h, age: a, targetWeight: t, gender: g, activityFactor: ACTS[ai].v })
+      profile = S.saveProfile({ height: h, age: a, targetWeight: t, gender: g, activityFactor: ACTS[ai].v, targetBodyFat: tbf, currentBodyFat: cbf })
       settings = S.saveSettings({ waterGoalMl: parseInt($('sW').value) || 1700, waterReminder: $('sWR').checked, mealReminder: $('sMR').checked, bgMusic: $('sBM').checked })
       if (window.SlimMusic) window.SlimMusic.setEnabled($('sBM').checked)
       if (settings.waterReminder) requestWaterPermission(); else stopWaterScheduler()
@@ -566,6 +654,10 @@
       if (!c.plan) return '还没有计划哦，去「计划」页定制一个 30 天目标吧！'
       return '计划进行中，每天按 ' + c.plan.dailyIntake + ' kcal 预算吃，精灵陪你达成 ' + c.plan.targetWeight + 'kg！'
     }
+    if (which === 'exercise') {
+      var ep = A.dailyExercisePlan(profile, c.w)
+      return '今天运动方案：' + ep.advice.phase + '，有氧 ~' + ep.advice.dailyAerobicMin + ' 分钟 + 力量 ~' + ep.advice.dailyStrengthMin + ' 分钟，点动作就能打卡哦～'
+    }
     // home / diet：用情绪系统
     var mood = A.moodFor(c.sum, c.band, c.tgt)
     return mood.text
@@ -588,6 +680,7 @@
     if (tab === 'home') renderHome()
     else if (tab === 'diet') renderDiet()
     else if (tab === 'weight') renderWeight()
+    else if (tab === 'exercise') renderExercise()
     else if (tab === 'plan') renderPlan()
     refreshSprite()
   }

@@ -339,6 +339,7 @@
     if (cur <= tgt) {
       result.alreadyThere = true
       result.tdee = predict(profile, cur, 0, 0).tdee
+      result.exerciseAdvice = exerciseAdvice(profile, cur)
       return result
     }
     const b = predict(profile, cur, 0, 0)
@@ -394,7 +395,81 @@
     result.distribution = DISTRIBUTION
     result.sampleMenu = sampleMenu
     result.sampleTotal = sampleTotal
+    result.exerciseAdvice = exerciseAdvice(profile, cur)
     return result
+  }
+
+  // ===================== 运动建议（权威标准） =====================
+  // 体脂率人群平均估算：Deurenberg 公式（非个体精测，用于阶段划分）
+  // BF% = 1.20 × BMI + 0.23 × 年龄 − 10.8 × 性别(1=男,0=女) − 5.4  （Deurenberg et al. 1991）
+  function deurenbergBodyFat(bmi, age, gender) {
+    var sex = gender === 'male' ? 1 : 0
+    var bf = 1.20 * bmi + 0.23 * age - 10.8 * sex - 5.4
+    return Math.round(bf * 10) / 10
+  }
+
+  // 每日跟练动作库：覆盖有氧(有氧燃脂) + 力量(主要肌群)，动作选择遵循 ACSM 力量训练「主要肌群」原则
+  var EXERCISES = [
+    { id: 'jump_jack', name: '开合跳', type: 'aerobic', amount: '40 秒 × 3 组', note: '热身 + 全身燃脂' },
+    { id: 'high_knee', name: '高抬腿', type: 'aerobic', amount: '40 秒 × 3 组', note: '心肺提升' },
+    { id: 'mountain', name: '登山跑', type: 'aerobic', amount: '40 秒 × 3 组', note: '腹部燃脂' },
+    { id: 'squat', name: '深蹲', type: 'strength', amount: '15 次 × 3 组', note: '练腿臀' },
+    { id: 'bridge', name: '臀桥', type: 'strength', amount: '15 次 × 3 组', note: '提臀塑形' },
+    { id: 'plank', name: '平板支撑', type: 'strength', amount: '40 秒 × 3 组', note: '核心收紧' },
+    { id: 'lunge', name: '弓步蹲', type: 'strength', amount: '12 次 × 3 组', note: '腿臀线条' },
+    { id: 'side_plank', name: '侧平板', type: 'strength', amount: '30 秒 × 每侧 2 组', note: '腰腹侧链' }
+  ]
+
+  // 依据（权威标准）：
+  //  WHO 2020《关于身体活动有益健康的全球建议》、ACSM 2021 立场、中国人群身体活动指南 2021
+  //  成年人每周 ≥150 分钟中等强度有氧（或 ≥75 分钟高强度，或等效组合）+ ≥2 天力量训练（主要肌群）
+  //  体脂差越大 → 越偏有氧制造热量缺口；越接近目标 → 越偏力量精雕防反弹
+  function exerciseAdvice(profile, weightKg) {
+    var bmi = calcBmi(weightKg, profile.height)
+    var curBF = (profile.currentBodyFat != null && !isNaN(profile.currentBodyFat)) ? profile.currentBodyFat : deurenbergBodyFat(bmi, profile.age, profile.gender)
+    var tgtBF = (profile.targetBodyFat != null && !isNaN(profile.targetBodyFat)) ? profile.targetBodyFat : (profile.gender === 'female' ? 24 : 18)
+    var gap = Math.round((curBF - tgtBF) * 10) / 10
+    var phase, weeklyAerobicMin, weeklyVigorousMin, strengthDays, trainingDays, dailyAerobicMin, dailyStrengthMin, strengthSets, note
+    if (gap >= 8) {
+      phase = '减脂强化期'
+      weeklyAerobicMin = 250; weeklyVigorousMin = 125; strengthDays = 3; trainingDays = 6
+      dailyAerobicMin = 30; dailyStrengthMin = 20; strengthSets = 3
+      note = '当前体脂率偏高（约 ' + curBF + '%，差 ' + gap + '%），以有氧制造热量缺口为主，配合每周 3 天力量训练保住瘦体组织'
+    } else if (gap >= 3) {
+      phase = '塑形进阶期'
+      weeklyAerobicMin = 210; weeklyVigorousMin = 105; strengthDays = 3; trainingDays = 5
+      dailyAerobicMin = 28; dailyStrengthMin = 20; strengthSets = 3
+      note = '体脂接近目标（约 ' + curBF + '%，差 ' + gap + '%），有氧与力量并重，雕刻身体线条'
+    } else {
+      phase = '维持精雕期'
+      weeklyAerobicMin = 150; weeklyVigorousMin = 75; strengthDays = 2; trainingDays = 5
+      dailyAerobicMin = 20; dailyStrengthMin = 25; strengthSets = 3
+      note = '体脂已接近/达成目标（约 ' + curBF + '%，差 ' + gap + '%），以维持 + 力量塑形为主，防止反弹'
+    }
+    return {
+      currentBF: curBF, targetBF: tgtBF, gap: gap, phase: phase,
+      weeklyAerobicMin: weeklyAerobicMin, weeklyVigorousMin: weeklyVigorousMin,
+      strengthDays: strengthDays, trainingDays: trainingDays,
+      dailyAerobicMin: dailyAerobicMin, dailyStrengthMin: dailyStrengthMin, strengthSets: strengthSets,
+      note: note,
+      standard: 'WHO 2020 / ACSM 2021 / 中国人群身体活动指南 2021'
+    }
+  }
+
+  // 今日跟练清单：依据阶段从动作库选取（减脂期有氧优先、维持期力量优先），并标注动作类型
+  function dailyExercisePlan(profile, weightKg) {
+    var adv = exerciseAdvice(profile, weightKg)
+    var aerobic = EXERCISES.filter(function (e) { return e.type === 'aerobic' })
+    var strength = EXERCISES.filter(function (e) { return e.type === 'strength' })
+    var moves
+    if (adv.phase === '减脂强化期') {
+      moves = aerobic.concat(strength) // 有氧(3) + 全套力量(4)
+    } else if (adv.phase === '塑形进阶期') {
+      moves = aerobic.concat(strength.slice(0, 3)) // 有氧(3) + 力量(3)
+    } else {
+      moves = aerobic.slice(0, 2).concat(strength) // 维持期偏力量：有氧(2) + 力量(4)
+    }
+    return { advice: adv, moves: moves }
   }
 
   // ===================== 小精灵情绪 =====================
@@ -435,6 +510,7 @@
     SAFE_DEFICIT, MIN_INTAKE, PROTEIN_PER_KG, PROTEIN_RNI_F, FAT_ENERGY_MAX, CARB_ENERGY_MAX, FIBER_AI,
     computeItem, sumMeals, tdeeOf, targets,
     DISTRIBUTION, SAMPLE_TEMPLATE, buildPlan,
+    EXERCISES, deurenbergBodyFat, exerciseAdvice, dailyExercisePlan,
     moodFor
   }
 

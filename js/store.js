@@ -18,14 +18,15 @@
 
   const KEY = {
     PROFILE: 'profile', WEIGHTS: 'weights', DIET: 'diet', PLAN: 'plan',
-    WATER: 'water', SETTINGS: 'settings', REMINDER_LOG: 'reminder_log'
+    WATER: 'water', SETTINGS: 'settings', REMINDER_LOG: 'reminder_log', EXERCISE: 'exercise'
   }
 
   const WATER_SLOTS = ['07:00', '09:00', '11:00', '13:00', '15:00', '17:30', '19:00', '21:30']
   const DEFAULT_WATER_ML = 250
 
   const DEFAULT_PROFILE = {
-    height: 160, gender: 'female', age: 27, targetWeight: 51, activityFactor: 1.2
+    height: 160, gender: 'female', age: 27, targetWeight: 51, activityFactor: 1.2,
+    targetBodyFat: 24, currentBodyFat: null
   }
   const DEFAULT_SETTINGS = {
     waterReminder: true, mealReminder: true, waterGoalMl: 1700, bgMusic: false
@@ -105,6 +106,27 @@
     return t
   }
 
+  // 运动打卡：按动作 id 记录当天是否完成（与喝水打卡同构）
+  function getExercises(date) {
+    const all = read(KEY.EXERCISE, {})
+    return all[date] || {}
+  }
+  function toggleExercise(date, id) {
+    const all = read(KEY.EXERCISE, {})
+    const day = all[date] || {}
+    if (day[id]) delete day[id]
+    else day[id] = true
+    all[date] = day
+    write(KEY.EXERCISE, all)
+    return day
+  }
+  function exerciseDoneCount(date, ids) {
+    const day = getExercises(date)
+    let n = 0
+    ;(ids || []).forEach(id => { if (day[id]) n += 1 })
+    return n
+  }
+
   function getReminderLog(date) {
     const all = read(KEY.REMINDER_LOG, {})
     return all[date] || {}
@@ -127,6 +149,7 @@
     getDiet, setDiet, todayStr,
     getPlan, setPlan,
     getWaters, toggleWater, waterTotal,
+    getExercises, toggleExercise, exerciseDoneCount,
     getReminderLog, markReminder, clearAll
   }
 

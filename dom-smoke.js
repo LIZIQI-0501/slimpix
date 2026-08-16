@@ -81,13 +81,28 @@ try {
   if (!doc.getElementById('pReset')) throw new Error('计划未生成')
   steps++; console.log('✓ 30天计划生成')
 
-  // 7. 首页：科学减肥视频（B站嵌入）+ 运动模块（帕梅拉）
+  // 7. 首页：科学减肥视频（B站嵌入）+ 今日运动实时记录卡
   click(doc.querySelector('#tabbar .tab[data-tab="home"]'))
   const homeV = doc.getElementById('view').innerHTML
   if (!homeV.includes('player.bilibili.com')) throw new Error('首页缺少 B站科普视频')
   if (!homeV.includes('科学减肥')) throw new Error('首页缺少科学减肥标题')
-  if (!homeV.includes('每日塑形') || !homeV.includes('BV1vzu36mEVd')) throw new Error('首页缺少运动模块/帕梅拉视频')
-  steps++; console.log('✓ 首页科普视频(B站) + 运动模块(帕梅拉) 渲染')
+  if (!homeV.includes('今日运动')) throw new Error('首页缺少今日运动实时记录卡')
+  if (!homeV.includes('data-go="exercise"')) throw new Error('首页运动卡缺少「去记录」跳转')
+  steps++; console.log('✓ 首页科普视频(B站) + 今日运动实时记录卡 渲染')
+
+  // 7.5 运动 Tab：方案 + 帕梅拉视频 + 打卡
+  click(doc.querySelector('#tabbar .tab[data-tab="exercise"]'))
+  const exV = doc.getElementById('view').innerHTML
+  if (!exV.includes('每日运动')) throw new Error('运动 Tab 标题缺失')
+  if (!exV.includes('BV1vzu36mEVd')) throw new Error('运动 Tab 缺少帕梅拉视频')
+  if (!exV.includes('WHO 2020')) throw new Error('运动 Tab 缺少权威标准说明')
+  const exRow = doc.querySelector('#view [data-exid]')
+  if (!exRow) throw new Error('运动 Tab 缺少可打卡动作')
+  const beforeBadge = doc.querySelector('.badge-ex').textContent
+  click(exRow)
+  const afterBadge = doc.querySelector('.badge-ex').textContent
+  if (beforeBadge === afterBadge) throw new Error('运动打卡后完成数未更新')
+  steps++; console.log('✓ 运动 Tab 方案 + 帕梅拉 + 打卡(' + beforeBadge + '→' + afterBadge + ')')
 
   // 8. 设置面板：打开 + 保存
   click(doc.getElementById('topbarGear'))
@@ -95,8 +110,9 @@ try {
   if (!saveBtn) throw new Error('设置面板未打开')
   setVal(doc.getElementById('sH'), '160')
   setVal(doc.getElementById('sT'), '50')
+  if (doc.getElementById('sTBF')) setVal(doc.getElementById('sTBF'), '22')
   click(saveBtn)
-  steps++; console.log('✓ 设置面板打开 + 保存')
+  steps++; console.log('✓ 设置面板打开 + 保存（含目标体脂率）')
 
   // 9. 清空数据（不确认）
   click(doc.getElementById('topbarGear'))
@@ -104,12 +120,12 @@ try {
   if (!doc.getElementById('sClear')) throw new Error('清空按钮缺失')
   steps++; console.log('✓ 设置面板可再次打开')
 
-  // 10. 验证已删除的 分析 / 科普 Tab 不再存在，基础 Tab 完整
+  // 10. 验证已删除的 分析 / 科普 Tab 不再存在，基础 Tab 完整（含运动）
   const tabbar = doc.getElementById('tabbar').innerHTML
   if (tabbar.includes('data-tab="analysis"')) throw new Error('分析 Tab 仍存在')
   if (tabbar.includes('data-tab="science"')) throw new Error('科普 Tab 仍存在')
-  if (!tabbar.includes('data-tab="home"') || !tabbar.includes('data-tab="diet"') || !tabbar.includes('data-tab="weight"') || !tabbar.includes('data-tab="plan"')) throw new Error('基础 Tab 缺失')
-  steps++; console.log('✓ 分析/科普 Tab 已移除, 仅保留 首页/饮食/体重/计划')
+  if (!tabbar.includes('data-tab="home"') || !tabbar.includes('data-tab="diet"') || !tabbar.includes('data-tab="weight"') || !tabbar.includes('data-tab="exercise"') || !tabbar.includes('data-tab="plan"')) throw new Error('基础 Tab 缺失')
+  steps++; console.log('✓ 分析/科普 Tab 已移除, 仅保留 首页/饮食/体重/运动/计划')
 
 } catch (e) {
   errors.push('TEST STEP FAILED: ' + e.message)
