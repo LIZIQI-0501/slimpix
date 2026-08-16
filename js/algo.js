@@ -485,7 +485,7 @@
     let sev = 0
     const reasons = []
     if (sum.total.kcal === 0) {
-      return { mood: 'green', src: sprites.green, color: colors.green, text: '今天还没记录呀～记得按时吃饭、好好记录，精灵陪你一起开始！' }
+      return { mood: 'green', src: sprites.green, color: colors.green, text: '今天还没记录呀～记得按时吃饭、好好记录，Hanna 陪你一起开始！' }
     }
     if (sum.blackHits > 0) { sev = 2; reasons.push('吃了黑名单食物(' + sum.blackList.join('、') + ')') }
     if (overRatio > 1.25) { sev = Math.max(sev, 2); reasons.push('热量超出今日上限 25% 以上') }
@@ -498,12 +498,12 @@
     if (tgt && sum.total.protein < tgt.protein.value) { sev = Math.max(sev, 1); reasons.push('蛋白质没吃够') }
     if (sev >= 2) {
       const what = reasons.length ? '（' + reasons.join('、') + '）' : ''
-      return { mood: 'red', src: sprites.red, color: colors.red, text: '今天不太理想呢' + what + '，精灵有点小失落…明天需要加油！' }
+      return { mood: 'red', src: sprites.red, color: colors.red, text: '今天不太理想呢' + what + '，Hanna 有点小失落…明天需要加油！' }
     }
     if (sev === 1) {
-      return { mood: 'orange', src: sprites.orange, color: colors.orange, text: '今天有点小波动哦' + '（' + reasons.join('、') + '），精灵有点担心，明天咱们调整一下～' }
+      return { mood: 'orange', src: sprites.orange, color: colors.orange, text: '今天有点小波动哦' + '（' + reasons.join('、') + '），Hanna 有点担心，明天咱们调整一下～' }
     }
-    return { mood: 'green', src: sprites.green, color: colors.green, text: '今天状态超棒！指标都在健康线内，精灵为你骄傲，明天继续保持～' }
+    return { mood: 'green', src: sprites.green, color: colors.green, text: '今天状态超棒！指标都在健康线内，Hanna 为你骄傲，明天继续保持～' }
   }
 
   const api = {
