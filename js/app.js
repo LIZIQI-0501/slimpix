@@ -636,6 +636,7 @@
         '<div class="field"><label>每日饮水目标 (ml)</label><input id="sW" type="number" value="' + settings.waterGoalMl + '"></div>' +
         '<div class="field"><label>大模型 API Key（食物识别，选填）</label><input id="sKey" type="text" value="' + escapeAttr(settings.llmApiKey || '') + '" placeholder="DeepSeek / OpenAI Key，留空则无法识别"></div>' +
         '<div class="switch-row"><span>饮水提醒</span><input type="checkbox" id="sWR" ' + (settings.waterReminder ? 'checked' : '') + '></div>' +
+        '<button class="btn" id="sTestPush" style="background:#E8F2EF;color:#3E8E7E;margin-top:8px">📲 测试推送（验证本机接收）</button>' +
         '<div class="switch-row"><span>饭点提醒</span><input type="checkbox" id="sMR" ' + (settings.mealReminder ? 'checked' : '') + '></div>' +
         '<div class="switch-row"><span>背景纯音乐</span><input type="checkbox" id="sBM" ' + (settings.bgMusic ? 'checked' : '') + '></div>' +
         '<button class="btn" id="sSave" style="margin-top:8px">保存</button>' +
@@ -661,6 +662,15 @@
       closeSettings(); renderTab(); refreshSprite(); toast('已保存')
     }
     $('sClear').onclick = function () { if (confirm('确定清空所有体重/饮食/计划数据？')) { S.clearAll(); profile = S.getProfile(); settings = S.getSettings(); closeSettings(); renderTab(); refreshSprite(); toast('已清空') } }
+    $('sTestPush').onclick = function () {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) { toast('当前环境不支持推送：需用 iOS 16.4+ 并已「添加到主屏幕」'); return }
+      if (!S.getPush().subscribed) {
+        toast('正在订阅本机…')
+        subscribeToPush().then(function () { doPushNow() }).catch(function () { toast('订阅失败，请允许通知授权') })
+      } else {
+        doPushNow()
+      }
+    }
   }
   function closeSettings() { var o = $('settingsOverlay'); o.classList.add('hidden'); o.innerHTML = '' }
 
@@ -837,22 +847,26 @@
   }
   // ===================== Web Push 订阅（让后台能关 App 也推送） =====================
   function subscribeToPush() {
-    if (!pushEnabled()) return false
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) { toast('当前浏览器不支持 Web 推送'); return false }
-    try {
-      navigator.serviceWorker.ready.then(function (reg) {
-        return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) })
-      }).then(function (sub) {
-        return fetch(PUSH_SERVER_URL + '/subscribe', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub })
-        }).then(function (res) {
-          if (!res.ok) throw new Error('subscribe failed')
-          S.setPush({ subscribed: true, endpoint: sub.endpoint })
-          toast('已开启「关 App 也提醒」 💧')
-        })
-      }).catch(function (err) { console.warn('subscribeToPush error', err); S.setPush({ subscribed: false, endpoint: null }) })
-    } catch (e) { console.warn('subscribeToPush sync error', e) }
-    return false
+    if (!pushEnabled()) { toast('推送服务未配置'); return Promise.reject(new Error('not enabled')) }
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) { toast('当前浏览器不支持 Web 推送（需 iOS 16.4+ 并已添加到主屏幕）'); return Promise.reject(new Error('unsupported')) }
+    return navigator.serviceWorker.ready.then(function (reg) {
+      return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) })
+    }).then(function (sub) {
+      return fetch(PUSH_SERVER_URL + '/subscribe', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub })
+      }).then(function (res) {
+        if (!res.ok) throw new Error('subscribe failed')
+        S.setPush({ subscribed: true, endpoint: sub.endpoint })
+        toast('已开启「关 App 也提醒」 💧')
+      })
+    }).catch(function (err) { console.warn('subscribeToPush error', err); S.setPush({ subscribed: false, endpoint: null }); throw err })
+  }
+  // 向后台请求一次「测试推送」，所有已订阅设备都会收到（用于验证本机接收）
+  function doPushNow() {
+    fetch(PUSH_SERVER_URL + '/push-now').then(function (r) { return r.json() }).then(function (d) {
+      if (d && d.ok) toast('已发送测试推送，请查看本机通知 💧')
+      else toast('发送失败：' + ((d && d.error) || '未知错误'))
+    }).catch(function () { toast('发送失败，请检查网络') })
   }
   function unsubscribeFromPush() {
     var st = S.getPush()
