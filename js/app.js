@@ -566,13 +566,12 @@
   // ============================================================
   //  启动
   // ============================================================
-  // 开屏：渐变动效 + 健康食物大碗 + 点击「进入」播放提示音与语音鼓励
+  // 开屏：渐变动效 + 健康食物大碗 + 点击「进入」播放轻提示音
   function initSplash() {
     var sp = document.getElementById('splash')
     if (!sp) return
     var enter = document.getElementById('splashEnter')
     var done = false
-    var TTS_TEXT = '嗨，欢迎来到菲奥娜的减肥记录仪。每一口健康的食物，都是给未来更好的自己投票。今天，也好好吃饭，慢慢变瘦吧。'
     function playIntro() {
       try {
         var AC = window.AudioContext || window.webkitAudioContext
@@ -590,12 +589,6 @@
             o.connect(g).connect(ac.destination)
             o.start(s); o.stop(s + 0.55)
           })
-        }
-        if (window.speechSynthesis) {
-          window.speechSynthesis.cancel()
-          var u = new SpeechSynthesisUtterance(TTS_TEXT)
-          u.lang = 'zh-CN'; u.rate = 1; u.pitch = 1.05; u.volume = 1
-          window.speechSynthesis.speak(u)
         }
       } catch (e) {}
     }

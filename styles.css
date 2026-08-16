@@ -212,7 +212,6 @@ body {
   box-shadow: 0 10px 24px rgba(0,0,0,.20); transition: transform .12s ease;
 }
 .splash-enter:active { transform: scale(.95); }
-.splash-hint { font-size: 12px; opacity: .8; margin: 14px 0 0; }
 .splash-progress { width: 168px; height: 5px; border-radius: 5px; background: rgba(255,255,255,.28); margin-top: 24px; overflow: hidden; }
 .splash-progress i { display: block; height: 100%; width: 0; background: #fff; border-radius: 5px; animation: pfill 4.6s linear forwards; }
 
