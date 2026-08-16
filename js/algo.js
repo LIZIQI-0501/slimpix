@@ -321,7 +321,7 @@
     const day = `${d.getDate()}`.padStart(2, '0')
     return `${d.getFullYear()}-${m}-${day}`
   }
-  function buildPlan(profile, currentWeight, targetWeight, duration) {
+  function buildPlan(profile, currentWeight, targetWeight, duration, userIntake) {
     const dur = duration || 30
     const cur = parseFloat(currentWeight)
     const tgt = parseFloat(targetWeight)
@@ -329,7 +329,8 @@
       createdAt: fmtDate(new Date()), startDate: fmtDate(new Date()), duration: dur,
       currentWeight: cur, targetWeight: tgt, height: profile.height,
       gender: profile.gender, age: profile.age,
-      activityFactor: profile.activityFactor || 1.2, alreadyThere: false, feasible30: true
+      activityFactor: profile.activityFactor || 1.2, alreadyThere: false, feasible30: true,
+      userIntake: null
     }
     if (cur <= tgt) {
       result.alreadyThere = true
@@ -341,7 +342,15 @@
     const needLoseKg = Math.round((cur - tgt) * 10) / 10
     const requiredDeficitPerDay = Math.round((needLoseKg * KCAL_PER_KG) / dur)
     const safeDeficit = Math.min(requiredDeficitPerDay, SAFE_DEFICIT)
-    const dailyIntake = Math.max(Math.round(tdee - safeDeficit), MIN_INTAKE)
+    const autoIntake = Math.max(Math.round(tdee - safeDeficit), MIN_INTAKE)
+
+    // 用户自定义摄入：留空/0 → 用安全缺口推导的默认值；其余按用户值，但不低于安全下限
+    let dailyIntake = autoIntake
+    if (userIntake !== undefined && userIntake !== null && userIntake !== '' && !isNaN(parseFloat(userIntake)) && parseFloat(userIntake) > 0) {
+      dailyIntake = Math.round(parseFloat(userIntake))
+      if (dailyIntake < MIN_INTAKE) dailyIntake = MIN_INTAKE
+      result.userIntake = dailyIntake
+    }
     const actualDeficit = tdee - dailyIntake
     const realisticDays = actualDeficit > 0 ? Math.ceil((needLoseKg * KCAL_PER_KG) / actualDeficit) : 999
     const end = new Date()

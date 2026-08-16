@@ -44,7 +44,10 @@ eq('sumMeals', web.sumMeals(meals), origNutrition.sumMeals(meals))
 // plan
 const pWeb = web.buildPlan(profile, 55, 51, 30)
 const pOrg = origPlan.buildPlan(profile, 55, 51, 30)
-eq('plan.keys', Object.keys(pWeb).sort(), Object.keys(pOrg).sort())
+// web 端新增可选字段 userIntake（原版无），排除后再比 keys
+const webPlanKeys = Object.keys(pWeb).filter(k => k !== 'userIntake').sort()
+const orgPlanKeys = Object.keys(pOrg).sort()
+eq('plan.keys', webPlanKeys, orgPlanKeys)
 eq('plan.scalars', [pWeb.bmr,pWeb.tdee,pWeb.needLoseKg,pWeb.dailyIntake,pWeb.realisticDays,pWeb.feasible30],
                        [pOrg.bmr,pOrg.tdee,pOrg.needLoseKg,pOrg.dailyIntake,pOrg.realisticDays,pOrg.feasible30])
 eq('plan.budget', pWeb.budget, pOrg.budget)

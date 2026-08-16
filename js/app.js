@@ -316,19 +316,28 @@
     var plan = S.getPlan()
     if (!plan) {
       var lw = S.getLatestWeight()
+      var curW = lw ? lw.weight : profile.targetWeight
+      var tdeeNow = A.predict(profile, curW, 0, 0).tdee
+      var safeMax = Math.max(Math.round(tdeeNow - 500), 1200)
+      var safeMin = 1200
       view().innerHTML =
         '<div class="page-title">📋 30天减肥计划</div>' +
         '<div class="card"><div class="card-title">制定你的计划</div>' +
-          '<div class="field"><label>当前体重 (kg)</label><input id="pCur" type="number" value="' + (lw ? lw.weight : profile.targetWeight) + '"></div>' +
+          '<div class="field"><label>当前体重 (kg)</label><input id="pCur" type="number" value="' + curW + '"></div>' +
           '<div class="field"><label>目标体重 (kg)</label><input id="pTgt" type="number" value="' + profile.targetWeight + '"></div>' +
           '<div class="field"><label>周期 (天)</label><input id="pDur" type="number" value="30"></div>' +
-          '<button class="btn" id="pBuild">生成计划</button>' +
+          '<div class="field"><label>每日摄入热量 (kcal)</label><input id="pKcal" type="number" value="' + safeMax + '" placeholder="留空按安全缺口自动"></div>' +
+          '<div class="muted small" style="margin-top:-4px">推荐范围 ' + safeMin + '~' + tdeeNow + ' kcal（你的 TDEE≈' + tdeeNow + '），不低于 1200 kcal 安全下限；超过 TDEE 不会掉秤</div>' +
+          '<button class="btn" id="pBuild" style="margin-top:14px">生成计划</button>' +
           '<div class="muted small" style="margin-top:10px">基于 Mifflin-St Jeor 基础代谢与 7700kcal≈1kg 脂肪，安全缺口 ≤500kcal/天</div>' +
         '</div>'
       $('pBuild').onclick = function () {
         var cur = parseFloat($('pCur').value), tgt = parseFloat($('pTgt').value), dur = parseInt($('pDur').value) || 30
         if (!cur || !tgt) { toast('请填写完整'); return }
-        var p = A.buildPlan(profile, cur, tgt, dur)
+        var kcalRaw = $('pKcal').value
+        var userIntake = kcalRaw === '' || kcalRaw === null ? null : parseFloat(kcalRaw)
+        if (userIntake !== null && (!isFinite(userIntake) || userIntake <= 0)) { toast('每日摄入热量请填正数或留空'); return }
+        var p = A.buildPlan(profile, cur, tgt, dur, userIntake)
         S.setPlan(p); toast('计划已生成'); renderPlan(); refreshSprite()
       }
       return
@@ -350,7 +359,7 @@
       '<div class="card"><div class="plan-flag">进行中 · ' + plan.duration + '天</div>' +
         '<div class="kv"><span>当前体重</span><span>' + plan.currentWeight + ' kg</span></div>' +
         '<div class="kv"><span>目标体重</span><span>' + plan.targetWeight + ' kg</span></div>' +
-        '<div class="kv"><span>每日热量预算</span><span>' + budget.kcal + ' kcal</span></div>' +
+        '<div class="kv"><span>每日热量预算</span><span>' + budget.kcal + ' kcal' + (plan.userIntake ? '（你设定）' : '（自动推导）') + '</span></div>' +
         '<div class="kv"><span>预计达成</span><span>' + plan.realisticDays + ' 天（' + plan.endDate + '）</span></div>' +
         (plan.feasible30 ? '' : '<div class="muted small" style="color:#E57373;margin-top:6px">⚠ 按安全缺口，30天内较难达标，建议延长周期或微调目标</div>') +
         '<div class="bar" style="margin-top:10px"><div class="bar-fill" style="width:' + progress + '%;background:#4E9C96"></div></div>' +
