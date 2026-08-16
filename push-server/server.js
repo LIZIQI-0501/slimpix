@@ -157,6 +157,35 @@ function sendToAll(slot) {
   })
 }
 
+// 立即群发一条测试推送（绕过时段限制，仅用于验证链路 / 确认设备是否订阅）
+function pushNow(label) {
+  var subs = loadSubs()
+  if (!subs.length) return Promise.resolve(0)
+  var payload = JSON.stringify({
+    title: '该喝水啦 💧',
+    body: '测试推送：' + (label || '现在') + '，喝一杯温水（约 250ml）有助代谢～',
+    tag: 'slimpix-water-test',
+    url: './'
+  })
+  return Promise.all(subs.map(function (sub) {
+    return webpush.sendNotification(sub, payload)
+      .then(function () { return null })
+      .catch(function (err) {
+        var code = err && err.statusCode
+        if (code === 404 || code === 410) return sub.endpoint
+        return null
+      })
+  })).then(function (results) {
+    var dead = results.filter(function (r) { return typeof r === 'string' })
+    if (dead.length) {
+      var kept = subs.filter(function (s) { return dead.indexOf(s.endpoint) < 0 })
+      saveSubs(kept)
+      console.log('已清除 ' + dead.length + ' 个失效订阅')
+    }
+    return subs.length
+  })
+}
+
 function tick() {
   const now = new Date()
   const hhmm = ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2)
@@ -234,6 +263,18 @@ const server = http.createServer(function (req, res) {
       } catch (e) {
         res.writeHead(400); res.end(JSON.stringify({ ok: false }))
       }
+    })
+    return
+  }
+  if (req.method === 'GET' && req.url === '/subs-count') {
+    res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: true, count: loadSubs().length }))
+    return
+  }
+  if (req.method === 'GET' && req.url === '/push-now') {
+    pushNow('测试').then(function (n) {
+      res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: true, sent: n }))
+    }).catch(function (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: false, error: String(e) }))
     })
     return
   }
