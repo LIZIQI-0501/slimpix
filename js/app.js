@@ -115,7 +115,7 @@
         '<div class="sci-head">🎬 科学减肥 · 不走弯路</div>' +
         '<div class="muted small" style="margin:4px 0 2px">权威科普：合理饮食 + 规律运动，拒绝液断 / 节食 / 饥饿</div>' +
         '<div class="video-wrap"><iframe src="https://player.bilibili.com/player.html?bvid=BV1Rh4y1c7s9&page=1&high_quality=1&danmaku=0&autoplay=0" allowfullscreen="true" scrolling="no" frameborder="0"></iframe></div>' +
-        '<a class="video-link" href="https://www.bilibili.com/video/BV1Rh4y1c7s9" target="_blank" rel="noopener">若播放器未加载，点此前往 B站原视频 ↗</a>' +
+        '<a class="video-link" href="https://www.bilibili.com/video/BV1Rh4y1c7s9" target="_blank" rel="noopener">B站原视频 ↗</a>' +
       '</div>' +
       (mealTip ? '<div class="card" style="background:#EAF6F2;color:#3C7A75">' + mealTip + '</div>' : '') +
       '<div class="hero" style="background:' + bmiColor + '">' +
@@ -133,7 +133,6 @@
         '<div class="water-total">' + waterMl + ' / ' + waterGoal + ' ml</div>' +
         '<div class="bar"><div class="bar-fill" style="width:' + waterPct + '%;background:#4A9FD6"></div></div>' +
         '<div class="slots">' + slotHtml + '</div>' +
-        '<div class="muted small">点时间段打卡（每次 250ml）</div>' +
         '<div class="remind-row" id="waterRemindRow"></div></div>' +
 
       '<div class="card"><div class="row-between"><span class="card-title">今日热量</span><span class="link" data-go="diet">去记录 ›</span></div>' +
@@ -190,7 +189,7 @@
         '<span class="muted small" style="margin-left:auto;text-align:right">有氧' + adv.dailyAerobicMin + '′<br>+力量' + adv.dailyStrengthMin + '′</span></div>' +
       '<div class="bar"><div class="bar-fill" style="width:' + pct + '%;background:' + phaseColor + '"></div></div>' +
       '<div class="ex-chips">' + miniHtml + '</div>' +
-      '<div class="muted small">点动作打卡（' + adv.standard.split(' / ')[0] + ' 推荐 · 当前体脂约 ' + adv.currentBF + '% / 目标 ' + adv.targetBF + '%）</div>' +
+      '<div class="muted small">' + adv.standard.split(' / ')[0] + ' · 当前体脂约 ' + adv.currentBF + '% / 目标 ' + adv.targetBF + '%</div>' +
     '</div>'
   }
 
@@ -233,7 +232,7 @@
         '<span class="badge-ex ' + (pct === 100 ? 'done' : '') + '">' + done + '/' + total + '</span></div>' +
         '<div class="bar" style="margin-top:8px"><div class="bar-fill" style="width:' + pct + '%;background:' + phaseColor + '"></div></div>' +
         (pct === 100 ? '<div class="muted small" style="color:#5BBF8A;margin-top:6px">🎉 今日运动达标，精灵为你点赞！</div>'
-          : '<div class="muted small" style="margin-top:6px">点下方动作逐项打卡，完成全部即达标</div>') +
+          : '') +
       '</div>' +
 
       '<div class="card ex-card">' +
@@ -244,7 +243,7 @@
         '<div class="muted small" style="margin-top:2px">' + adv.note + '</div>' +
         '<div class="ex-list">' + moveHtml + '</div>' +
         '<div class="video-wrap"><iframe src="https://player.bilibili.com/player.html?bvid=BV1vzu36mEVd&page=1&high_quality=1&danmaku=0&autoplay=0" allowfullscreen="true" scrolling="no" frameborder="0"></iframe></div>' +
-        '<a class="video-link" href="https://www.bilibili.com/video/BV1vzu36mEVd" target="_blank" rel="noopener">帕梅拉 40 分钟有氧燃脂（站立·瘦腹纤腿·含拉伸）跟练（点此前往 B站原视频 ↗）</a>' +
+        '<a class="video-link" href="https://www.bilibili.com/video/BV1vzu36mEVd" target="_blank" rel="noopener">帕梅拉 40 分钟有氧燃脂（站立·瘦腹纤腿·含拉伸）跟练 ↗</a>' +
       '</div>'
 
     view().querySelectorAll('[data-exid]').forEach(function (el) {
@@ -264,11 +263,10 @@
     if (Notification.permission === 'granted') {
       el.innerHTML = settings.waterReminder
         ? '<span class="muted small">✅ 已开启定时喝水提醒（' + S.WATER_SLOTS.length + ' 个时段）</span>'
-        : '<span class="muted small">提醒已关闭，可在「设置」开启</span>'
+        : '<span class="muted small">提醒已关闭</span>'
       return
     }
-    el.innerHTML = '<button class="mini-btn" id="waterAuthBtn">开启喝水提醒 💧</button>' +
-      '<span class="muted small">授权后到点推送系统通知</span>'
+    el.innerHTML = '<button class="mini-btn" id="waterAuthBtn">开启喝水提醒 💧</button>'
     var b = $('waterAuthBtn')
     if (b) b.onclick = requestWaterPermission
   }
@@ -637,9 +635,7 @@
         '</div></div>' +
         '<div class="field"><label>每日饮水目标 (ml)</label><input id="sW" type="number" value="' + settings.waterGoalMl + '"></div>' +
         '<div class="field"><label>大模型 API Key（食物识别，选填）</label><input id="sKey" type="text" value="' + escapeAttr(settings.llmApiKey || '') + '" placeholder="DeepSeek / OpenAI Key，留空则无法识别"></div>' +
-        '<div class="muted small" style="margin-top:-6px">用于饮食页「自由输入识别」：输入你吃了什么，系统自动识别食物并算出卡路里。Key 仅存本机(localStorage)，发送到你自己的后端用于调用大模型，不上传任何第三方。</div>' +
         '<div class="switch-row"><span>饮水提醒</span><input type="checkbox" id="sWR" ' + (settings.waterReminder ? 'checked' : '') + '></div>' +
-        '<div class="muted small" style="margin-top:-6px">开启后到点推送系统通知提醒喝水（App 打开/后台即可提醒；若已部署推送后端并「添加到主屏幕」，关闭 App 也能像闹钟一样提醒。iOS 需 iOS 16.4+ 且先「添加到主屏幕」）</div>' +
         '<div class="switch-row"><span>饭点提醒</span><input type="checkbox" id="sMR" ' + (settings.mealReminder ? 'checked' : '') + '></div>' +
         '<div class="switch-row"><span>背景纯音乐</span><input type="checkbox" id="sBM" ' + (settings.bgMusic ? 'checked' : '') + '></div>' +
         '<button class="btn" id="sSave" style="margin-top:8px">保存</button>' +
