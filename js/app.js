@@ -137,7 +137,7 @@
 
       '<div class="card"><div class="row-between"><span class="card-title">今日热量</span><span class="link" data-go="diet">去记录 ›</span></div>' +
         '<div class="row"><span class="kcal-now" style="font-size:26px;font-weight:800">' + todayKcal + '</span><span class="muted">/ ' + tgtKcal + ' kcal</span></div>' +
-        (planActive ? '<div class="plan-flag">📋 30天计划进行中</div>' : '') +
+        (planActive ? '<div class="plan-flag" data-go="plan" style="cursor:pointer">📋 30天计划进行中 ›</div>' : '') +
         '<div class="bar"><div class="bar-fill" style="width:' + kcalPct + '%;background:' + (kcalPct > 90 ? '#E57373' : '#4E9C96') + '"></div></div>' +
         '<div class="n-row"><span class="n-name">蛋白质</span><div class="bar"><div class="bar-fill" style="width:' + nutriPct.protein + '%;background:#5BBF8A"></div></div><span class="n-val">' + p.protein + '/' + tp.protein.value + 'g</span></div>' +
         '<div class="n-row"><span class="n-name">碳水</span><div class="bar"><div class="bar-fill" style="width:' + nutriPct.carb + '%;background:#F2B705"></div></div><span class="n-val">' + p.carb + '/' + tp.carb.value + 'g</span></div>' +
@@ -658,6 +658,7 @@
       settings = S.saveSettings({ waterGoalMl: parseInt($('sW').value) || 1700, waterReminder: $('sWR').checked, mealReminder: $('sMR').checked, bgMusic: $('sBM').checked, llmApiKey: ($('sKey').value || '').trim() })
       if (window.SlimMusic) window.SlimMusic.setEnabled($('sBM').checked)
       if (settings.waterReminder) requestWaterPermission(); else { stopWaterScheduler(); unsubscribeFromPush() }
+      if (settings.mealReminder) setupMealReminder(); else { stopMealScheduler() }
       closeSettings(); renderTab(); refreshSprite(); toast('已保存')
     }
     $('sClear').onclick = function () { if (confirm('确定清空所有体重/饮食/计划数据？')) { S.clearAll(); profile = S.getProfile(); settings = S.getSettings(); closeSettings(); renderTab(); refreshSprite(); toast('已清空') } }
@@ -683,6 +684,7 @@
     try { spritePos = JSON.parse(localStorage.getItem('slimpix.sprite_pos') || 'null') } catch (e) {}
     var W = window.innerWidth, H = window.innerHeight
     if (spritePos && typeof spritePos.x === 'number') { sx = spritePos.x; sy = spritePos.y } else { sx = 16; sy = Math.max(120, H - sSize - 140) }
+    clampSprite()
     tx = sx; ty = sy
     place()
 
@@ -690,7 +692,7 @@
     document.addEventListener('pointermove', function (e) {
       if (!dragging) return
       var px = e.clientX, py = e.clientY
-      sx = clamp(px - dragOX, 0, window.innerWidth - sSize); sy = clamp(py - dragOY, 0, window.innerHeight - sSize); moved = true; place()
+      sx = clamp(px - dragOX, 0, window.innerWidth - sSize); sy = clamp(py - dragOY, 0, window.innerHeight - sSize); moved = true; clampSprite(); place()
     })
     // 按下精灵：进入拖拽
     spriteEl.addEventListener('pointerdown', function (e) {
@@ -710,6 +712,12 @@
     loop()
   }
 
+  function clampSprite() {
+    var W = window.innerWidth, H = window.innerHeight
+    var topSafe = 96, bottomSafe = 96  // 远离顶部 header 与底部 tabbar，避免遮挡点击
+    sx = clamp(sx, 0, Math.max(0, W - sSize))
+    sy = clamp(sy, topSafe, Math.max(topSafe, H - sSize - bottomSafe))
+  }
   function place() { spriteEl.style.left = sx + 'px'; spriteEl.style.top = sy + 'px' }
   function loop() {
     if (!dragging) {
@@ -731,8 +739,46 @@
     clearTimeout(bubbleTimer)
     bubbleTimer = setTimeout(function () { bubbleEl.classList.add('hidden') }, 4500)
   }
+  // 精灵语音：点击时朗读提示词。尽量挑自然中文嗓音 + 调参去除"机器朗读"感
+  var cachedVoices = []
+  function loadVoices() {
+    try { cachedVoices = (window.speechSynthesis && window.speechSynthesis.getVoices()) || [] } catch (e) { cachedVoices = [] }
+  }
+  if (window.speechSynthesis) {
+    loadVoices()
+    try { window.speechSynthesis.onvoiceschanged = loadVoices } catch (e2) {}
+  }
+  function pickVoice() {
+    if (!cachedVoices.length) return null
+    var best = null
+    for (var i = 0; i < cachedVoices.length; i++) {
+      var n = (cachedVoices[i].name || '') + ' ' + (cachedVoices[i].lang || '')
+      if (/zh|cmn|Chinese|中文|普通话|國語/i.test(n)) {
+        best = cachedVoices[i]
+        if (/(Google|Ting|Yue|Natural|Premium|Female|女|yaoyao|Mei|Hui|Kangkang|Xiaoxiao|Yun|Shanshan|Yaoyao)/i.test(n)) break
+      }
+    }
+    return best
+  }
+  function speak(text) {
+    if (!text) return
+    var synth = window.speechSynthesis
+    if (!synth) return
+    try {
+      synth.cancel()
+      var u = new SpeechSynthesisUtterance(text)
+      u.lang = 'zh-CN'
+      u.rate = 0.98   // 略慢一点点，更像真人说话、不像机器朗读
+      u.pitch = 1.0   // 不抬高音调，避免"电音 / 童音"感
+      u.volume = 1.0
+      var v = pickVoice()
+      if (v) u.voice = v
+      try { if (synth.resume) synth.resume() } catch (e2) {}  // iOS 有时需先 resume 才发声
+      synth.speak(u)
+    } catch (e) {}
+  }
   function toggleBubble() {
-    if (bubbleEl.classList.contains('hidden')) showBubble(spriteTextFor(tab))
+    if (bubbleEl.classList.contains('hidden')) { var t = spriteTextFor(tab); showBubble(t); speak(t) }
     else { bubbleEl.classList.add('hidden'); clearTimeout(bubbleTimer) }
   }
 
@@ -835,7 +881,57 @@
   function setupWaterReminder() {
     if (settings.waterReminder && 'Notification' in window && Notification.permission === 'granted') startWaterScheduler()
   }
+  // ===================== 饭点提醒（与喝水提醒同构：早8 / 中12 / 晚6） =====================
+  var mealSchedulerId = null
+  var mealNotified = {}
+  function loadMealNotified() {
+    try { mealNotified = S.getReminderLog(S.todayStr() + ':meal') || {} } catch (e) { mealNotified = {} }
+  }
+  function fireMealNotification(slot) {
+    // 已订阅 Web Push（后台可关 App 推送）时，系统通知交由后台发送，这里不再重复弹；否则用本地通知兜底
+    try {
+      if ('Notification' in window && Notification.permission === 'granted' && !S.getPush().subscribed) {
+        new Notification('该吃饭啦 🍚', {
+          body: '现在是 ' + slot + '，记得按时吃饭、记录一下哦～',
+          tag: 'slimpix-meal-' + slot, icon: 'icon.svg'
+        })
+      }
+    } catch (e) {}
+    if (window.SlimMusic && window.SlimMusic.chime) window.SlimMusic.chime()
+    toast('🍚 该吃饭啦（' + slot + '）')
+  }
+  function checkMealReminder() {
+    if (!settings.mealReminder) return
+    if (!('Notification' in window) || Notification.permission !== 'granted') return
+    var now = new Date()
+    S.MEAL_SLOTS.forEach(function (slot) {
+      var sd = slotDate(slot)
+      var diffMin = (now - sd) / 60000
+      // 仅在该时段过后 30 分钟内、且今天尚未提醒过时，推送一次
+      if (diffMin >= 0 && diffMin <= 30 && !mealNotified[slot]) {
+        mealNotified[slot] = true
+        S.markReminder(S.todayStr() + ':meal', slot)
+        fireMealNotification(slot)
+      }
+    })
+  }
+  function startMealScheduler() {
+    if (mealSchedulerId) return
+    loadMealNotified()
+    checkMealReminder() // 立即检查一次（若已过点且今天未提醒）
+    mealSchedulerId = setInterval(checkMealReminder, 30000)
+  }
+  function stopMealScheduler() {
+    if (mealSchedulerId) { clearInterval(mealSchedulerId); mealSchedulerId = null }
+  }
+  function setupMealReminder() {
+    if (settings.mealReminder && 'Notification' in window && Notification.permission === 'granted') startMealScheduler()
+  }
   // ===================== Web Push 订阅（让后台能关 App 也推送） =====================
+  // 当前提醒偏好，随订阅一并上报后端（后端据此决定是否推送水/饭点）
+  function pushPrefs() {
+    return { water: !!settings.waterReminder, meal: !!settings.mealReminder }
+  }
   function subscribeToPush() {
     if (!pushEnabled()) return false
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) { toast('当前浏览器不支持 Web 推送'); return false }
@@ -844,7 +940,7 @@
         return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) })
       }).then(function (sub) {
         return fetch(PUSH_SERVER_URL + '/subscribe', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub })
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub, prefs: pushPrefs() })
         }).then(function (res) {
           if (!res.ok) throw new Error('subscribe failed')
           S.setPush({ subscribed: true, endpoint: sub.endpoint })
@@ -883,7 +979,7 @@
       }).then(function (sub) {
         if (!sub) { S.setPush({ subscribed: false, endpoint: null }); return } // OS 层已取消，清本地标记
         return fetch(PUSH_SERVER_URL + '/subscribe', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub })
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub, prefs: pushPrefs() })
         }).catch(function () {})
       }).catch(function (err) { console.warn('ensureSubscribed error', err) })
     } catch (e) {}
@@ -962,6 +1058,7 @@
     renderTab()
     setTimeout(announce, 600)
     setupWaterReminder()
+    setupMealReminder()
 
     // PWA service worker（仅在 http(s) 下注册）
     if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {

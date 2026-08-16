@@ -115,6 +115,7 @@ function callLLM(text, apiKey) {
 
 // 饮水时段（务必与 web/js/store.js 的 WATER_SLOTS 保持一致）
 const WATER_SLOTS = ['07:00', '09:00', '11:00', '13:00', '15:00', '17:30', '19:00', '21:30']
+const MEAL_SLOTS = ['08:00', '12:00', '18:00']
 
 function loadSubs() {
   try { return JSON.parse(fs.readFileSync(SUBS_FILE, 'utf8')) } catch (e) { return [] }
@@ -129,17 +130,30 @@ function saveSent(s) {
   fs.writeFileSync(SENT_FILE, JSON.stringify(s))
 }
 
-// 向全部订阅者推送；404/410 的失效订阅自动清除
-function sendToAll(slot) {
-  const subs = loadSubs()
-  if (!subs.length) return
-  const payload = JSON.stringify({
+// 向全部订阅者推送；尊重每个订阅的 prefs（关掉的提醒不推）；404/410 的失效订阅自动清除
+function payloadFor(slot, type) {
+  if (type === 'meal') {
+    return JSON.stringify({
+      title: '该吃饭啦 🍚',
+      body: '现在是 ' + slot + '，记得按时吃饭、记录一下哦～',
+      tag: 'slimpix-meal-' + slot,
+      url: './'
+    })
+  }
+  return JSON.stringify({
     title: '该喝水啦 💧',
     body: '现在是 ' + slot + '，喝一杯温水（约 250ml）有助代谢～',
     tag: 'slimpix-water-' + slot,
     url: './'
   })
+}
+function sendToAll(slot, type) {
+  const subs = loadSubs()
+  if (!subs.length) return
+  const payload = payloadFor(slot, type)
   Promise.all(subs.map(function (sub) {
+    // 该订阅若显式关掉了此类提醒（prefs[type]===false）则跳过
+    if (sub.prefs && sub.prefs[type] === false) return null
     return webpush.sendNotification(sub, payload)
       .then(function () { return null })
       .catch(function (err) {
@@ -192,18 +206,22 @@ function tick() {
   const today = now.getFullYear() + '-' + ('0' + (now.getMonth() + 1)).slice(-2) + '-' + ('0' + now.getDate()).slice(-2)
   let sent = loadSent()
   if (sent.date !== today) sent = { date: today, slots: {} }
-  WATER_SLOTS.forEach(function (slot) {
+  function fire(slot, type) {
+    const key = type + ':' + slot
+    if (sent.slots[key]) return
     const p = slot.split(':')
-    const slotDate = new Date()
-    slotDate.setHours(parseInt(p[0], 10), parseInt(p[1], 10), 0, 0)
-    const diffMin = (now - slotDate) / 60000
-    if (diffMin >= 0 && diffMin <= 30 && !sent.slots[slot]) {
-      sent.slots[slot] = true
+    const sd = new Date()
+    sd.setHours(parseInt(p[0], 10), parseInt(p[1], 10), 0, 0)
+    const diffMin = (now - sd) / 60000
+    if (diffMin >= 0 && diffMin <= 30) {
+      sent.slots[key] = true
       saveSent(sent)
-      sendToAll(slot)
-      console.log('[' + hhmm + '] 已推送饮水提醒：' + slot)
+      sendToAll(slot, type)
+      console.log('[' + hhmm + '] 已推送' + (type === 'meal' ? '饭点' : '饮水') + '提醒：' + slot)
     }
-  })
+  }
+  WATER_SLOTS.forEach(function (slot) { fire(slot, 'water') })
+  MEAL_SLOTS.forEach(function (slot) { fire(slot, 'meal') })
 }
 
 const server = http.createServer(function (req, res) {
@@ -221,10 +239,13 @@ const server = http.createServer(function (req, res) {
         const obj = JSON.parse(body)
         const subs = loadSubs()
         if (!obj.subscription || !obj.subscription.endpoint) throw new Error('bad subscription')
-        if (!subs.some(function (s) { return s.endpoint === obj.subscription.endpoint })) {
-          subs.push(obj.subscription)
-          saveSubs(subs)
-        }
+        const sub = obj.subscription
+        sub.prefs = (obj.prefs && typeof obj.prefs === 'object')
+          ? { water: obj.prefs.water !== false, meal: obj.prefs.meal !== false }
+          : { water: true, meal: true }
+        const idx = subs.findIndex(function (s) { return s.endpoint === sub.endpoint })
+        if (idx === -1) subs.push(sub); else subs[idx] = sub  // 不存在则新增，存在则更新（含 prefs 开关）
+        saveSubs(subs)
         res.writeHead(201); res.end(JSON.stringify({ ok: true }))
       } catch (e) {
         res.writeHead(400); res.end(JSON.stringify({ ok: false, error: String(e) }))

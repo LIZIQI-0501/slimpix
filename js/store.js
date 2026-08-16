@@ -22,6 +22,7 @@
   }
 
   const WATER_SLOTS = ['07:00', '09:00', '11:00', '13:00', '15:00', '17:30', '19:00', '21:30']
+  const MEAL_SLOTS = ['08:00', '12:00', '18:00']
   const DEFAULT_WATER_ML = 250
 
   const DEFAULT_PROFILE = {
@@ -147,7 +148,7 @@
   function setPush(obj) { write(KEY.PUSH, obj); return obj }
 
   const api = {
-    KEY, WATER_SLOTS, DEFAULT_WATER_ML, DEFAULT_PROFILE, DEFAULT_SETTINGS,
+    KEY, WATER_SLOTS, MEAL_SLOTS, DEFAULT_WATER_ML, DEFAULT_PROFILE, DEFAULT_SETTINGS,
     getProfile, saveProfile, getSettings, saveSettings,
     getWeights, addWeight, getLatestWeight,
     getDiet, setDiet, todayStr,
