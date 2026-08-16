@@ -408,16 +408,18 @@
     return Math.round(bf * 10) / 10
   }
 
-  // 每日跟练动作库：覆盖有氧(有氧燃脂) + 力量(主要肌群)，动作选择遵循 ACSM 力量训练「主要肌群」原则
+  // 每日跟练动作库：与帕梅拉视频（BV1vzu36mEVd「40分钟有氧燃脂瘦全身合集·站立瘦腹纤腿·含拉伸」）一致的站立式动作
+  // 分类：aerobic = 有氧燃脂动作；strength = 站立塑形动作（腿/臀/腹）；stretch = 结尾拉伸
   var EXERCISES = [
     { id: 'jump_jack', name: '开合跳', type: 'aerobic', amount: '40 秒 × 3 组', note: '热身 + 全身燃脂' },
-    { id: 'high_knee', name: '高抬腿', type: 'aerobic', amount: '40 秒 × 3 组', note: '心肺提升' },
-    { id: 'mountain', name: '登山跑', type: 'aerobic', amount: '40 秒 × 3 组', note: '腹部燃脂' },
-    { id: 'squat', name: '深蹲', type: 'strength', amount: '15 次 × 3 组', note: '练腿臀' },
-    { id: 'bridge', name: '臀桥', type: 'strength', amount: '15 次 × 3 组', note: '提臀塑形' },
-    { id: 'plank', name: '平板支撑', type: 'strength', amount: '40 秒 × 3 组', note: '核心收紧' },
-    { id: 'lunge', name: '弓步蹲', type: 'strength', amount: '12 次 × 3 组', note: '腿臀线条' },
-    { id: 'side_plank', name: '侧平板', type: 'strength', amount: '30 秒 × 每侧 2 组', note: '腰腹侧链' }
+    { id: 'jog', name: '原地慢跑', type: 'aerobic', amount: '40 秒 × 3 组', note: '持续有氧燃脂' },
+    { id: 'high_knee', name: '高抬腿', type: 'aerobic', amount: '40 秒 × 3 组', note: '心肺提升 + 收腹' },
+    { id: 'squat', name: '深蹲', type: 'strength', amount: '20 次 × 3 组', note: '瘦腿练臀' },
+    { id: 'side_lunge', name: '侧弓步', type: 'strength', amount: '左右各 12 次 × 3 组', note: '瘦腿内侧' },
+    { id: 'back_kick', name: '后踢腿', type: 'strength', amount: '左右各 15 次 × 3 组', note: '提臀瘦腿' },
+    { id: 'knee_twist', name: '提膝转体', type: 'strength', amount: '左右各 15 次 × 3 组', note: '站立收腹' },
+    { id: 'side_leg', name: '侧抬腿', type: 'strength', amount: '左右各 15 次 × 3 组', note: '纤腿线条' },
+    { id: 'stretch', name: '全身拉伸', type: 'stretch', amount: '5 分钟', note: '放松防酸痛（视频结尾）' }
   ]
 
   // 依据（权威标准）：
@@ -456,20 +458,21 @@
     }
   }
 
-  // 今日跟练清单：依据阶段从动作库选取（减脂期有氧优先、维持期力量优先），并标注动作类型
+  // 今日跟练清单：依据阶段从动作库选取（减脂期有氧优先、维持期塑形优先），末尾固定加视频结尾拉伸
   function dailyExercisePlan(profile, weightKg) {
     var adv = exerciseAdvice(profile, weightKg)
     var aerobic = EXERCISES.filter(function (e) { return e.type === 'aerobic' })
     var strength = EXERCISES.filter(function (e) { return e.type === 'strength' })
+    var stretch = EXERCISES.filter(function (e) { return e.type === 'stretch' })
     var moves
     if (adv.phase === '减脂强化期') {
-      moves = aerobic.concat(strength) // 有氧(3) + 全套力量(4)
+      moves = aerobic.concat(strength) // 有氧(3) + 全套塑形(5)
     } else if (adv.phase === '塑形进阶期') {
-      moves = aerobic.concat(strength.slice(0, 3)) // 有氧(3) + 力量(3)
+      moves = aerobic.concat(strength.slice(0, 3)) // 有氧(3) + 塑形(3)
     } else {
-      moves = aerobic.slice(0, 2).concat(strength) // 维持期偏力量：有氧(2) + 力量(4)
+      moves = aerobic.slice(0, 2).concat(strength) // 维持期偏塑形：有氧(2) + 塑形(5)
     }
-    return { advice: adv, moves: moves }
+    return { advice: adv, moves: moves.concat(stretch) }
   }
 
   // ===================== 小精灵情绪 =====================

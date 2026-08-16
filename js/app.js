@@ -219,11 +219,7 @@
         '<div class="muted small" style="margin-top:2px">' + adv.note + '</div>' +
         '<div class="ex-list">' + moveHtml + '</div>' +
         '<div class="video-wrap"><iframe src="https://player.bilibili.com/player.html?bvid=BV1vzu36mEVd&page=1&high_quality=1&danmaku=0&autoplay=0" allowfullscreen="true" scrolling="no" frameborder="0"></iframe></div>' +
-        '<a class="video-link" href="https://www.bilibili.com/video/BV1vzu36mEVd" target="_blank" rel="noopener">帕梅拉 40 分钟全身燃脂跟练（点此前往 B站原视频 ↗）</a>' +
-      '</div>' +
-
-      '<div class="card"><div class="card-title">📌 为什么这样安排</div>' +
-        '<div class="muted small">有氧（开合跳 / 高抬腿 / 登山跑）提升心率、增加每日消耗，是制造热量缺口的主力；力量训练（深蹲 / 臀桥 / 平板等）保住并增长瘦体组织，让你在减脂时线条更紧致、基础代谢不塌。两者结合是 WHO 与中国运动指南一致推荐的科学减脂方式。体脂率越接近目标，方案会逐步从「有氧优先」转向「力量精雕」以维持成果、防止反弹。</div>' +
+        '<a class="video-link" href="https://www.bilibili.com/video/BV1vzu36mEVd" target="_blank" rel="noopener">帕梅拉 40 分钟有氧燃脂（站立·瘦腹纤腿·含拉伸）跟练（点此前往 B站原视频 ↗）</a>' +
       '</div>'
 
     view().querySelectorAll('[data-exid]').forEach(function (el) {
