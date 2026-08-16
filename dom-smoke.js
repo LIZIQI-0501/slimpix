@@ -101,6 +101,14 @@ try {
   if (!doc.getElementById('sClear')) throw new Error('清空按钮缺失')
   steps++; console.log('✓ 设置面板可再次打开')
 
+  // 10. 科普 Tab：渲染 + 视频播放器存在 + 无报错
+  click(doc.querySelector('#tabbar .tab[data-tab="science"]'))
+  const v = doc.getElementById('view').innerHTML
+  if (!v.includes('健康科普')) throw new Error('科普页未渲染')
+  if (!v.includes('video-wrap') || !v.includes('iframe')) throw new Error('科普页缺少视频播放器')
+  if (!v.includes('v.qq.com/iframe/player.html')) throw new Error('科普页缺少视频嵌入地址')
+  steps++; console.log('✓ 科普 Tab 渲染 + 视频播放器 + 官方链接')
+
 } catch (e) {
   errors.push('TEST STEP FAILED: ' + e.message)
 }

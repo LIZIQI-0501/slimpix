@@ -413,6 +413,28 @@
       (spark ? '<div class="card"><span class="card-title">体重趋势</span>' + spark + '</div>' : '')
   }
 
+  // ---------- 健康科普 ----------
+  function renderScience() {
+    var intro = '国家卫健委《成人肥胖食养指南（2024年版）》指出：科学减重靠的是「合理饮食 + 规律运动」的长期习惯，而不是液断、节食或饥饿。极端方式会拉低基础代谢、流失肌肉，停掉后更容易反弹。'
+    function vidCard(title, vid, link) {
+      return '<div class="card">' +
+        '<div class="card-title">' + title + '</div>' +
+        '<div class="video-wrap"><iframe src="https://v.qq.com/iframe/player.html?vid=' + vid + '&tiny=0&auto=0" allowfullscreen scrolling="no" frameborder="0"></iframe></div>' +
+        '<a class="video-link" href="' + link + '" target="_blank" rel="noopener">若播放器未加载，点此前往原视频 ↗</a>' +
+        '</div>'
+    }
+    view().innerHTML =
+      '<div class="page-title">📚 健康科普</div>' +
+      '<div class="card" style="background:#EAF6F2;color:#3C7A75">' + intro + '</div>' +
+      vidCard('🚫 减肥千万不要「液断」', 'j3290hyzk2g', 'https://v.qq.com/x/cover/mzc003uqyvz5hjj/j3290hyzk2g.html') +
+      vidCard('🍽️ 节食能减肥吗？这些减肥误区', 'b07906s7jx7', 'https://v.qq.com/x/page/b07906s7jx7.html') +
+      '<div class="card"><div class="card-title">延伸阅读（官方）</div>' +
+        '<a class="video-link" href="https://tv.cctv.cn/yskd/special/ch/jkzgxl/jkzg38/index.shtml" target="_blank" rel="noopener">央视网《健康中国》· 减肥误区</a>' +
+        '<a class="video-link" href="https://cloud.kepuchina.cn/newSearch/videoDetail?id=7065721111097470976" target="_blank" rel="noopener">科普中国 · 为什么节食减肥会反弹</a>' +
+      '</div>' +
+      '<div class="muted small" style="text-align:center;margin-top:8px">视频来自腾讯视频 / 央视网 / 科普中国等公开科普平台，仅供学习参考</div>'
+  }
+
   // ============================================================
   //  设置面板
   // ============================================================
@@ -566,6 +588,7 @@
     else if (tab === 'weight') renderWeight()
     else if (tab === 'plan') renderPlan()
     else if (tab === 'analysis') renderAnalysis()
+    else if (tab === 'science') renderScience()
     refreshSprite()
   }
   function setTab(name) {

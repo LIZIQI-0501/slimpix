@@ -215,6 +215,12 @@ body {
 .splash-progress { width: 168px; height: 5px; border-radius: 5px; background: rgba(255,255,255,.28); margin-top: 24px; overflow: hidden; }
 .splash-progress i { display: block; height: 100%; width: 0; background: #fff; border-radius: 5px; animation: pfill 4.6s linear forwards; }
 
+/* 健康科普：视频播放器 + 兜底链接 */
+.video-wrap { position: relative; width: 100%; padding-top: 56.25%; margin-top: 10px; border-radius: 12px; overflow: hidden; background: #111; }
+.video-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.video-link { display: block; margin-top: 8px; color: #4E9C96; font-size: 13px; text-decoration: none; }
+.video-link:hover { text-decoration: underline; }
+
 /* 食物轻轻浮动 + 呼吸 + 蒸汽 */
 .food { transform-box: fill-box; transform-origin: center; animation: bob 3.2s ease-in-out infinite; }
 .food.f2 { animation-delay: .25s } .food.f3 { animation-delay: .5s }
