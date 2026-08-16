@@ -41,3 +41,30 @@ self.addEventListener('fetch', function (e) {
     })
   )
 })
+
+// ===================== Web Push（关 App 也能提醒，需后台发送） =====================
+self.addEventListener('push', function (e) {
+  var data = { title: '该喝水啦 💧', body: '喝一杯温水（约 250ml）有助代谢～', url: './', tag: 'slimpix-water' }
+  try { if (e.data) { var p = e.data.json(); if (p) data = Object.assign(data, p) } } catch (err) {}
+  e.waitUntil(self.registration.showNotification(data.title, {
+    body: data.body,
+    icon: 'icon.svg',
+    badge: 'icon.svg',
+    tag: data.tag,
+    renotify: true,
+    data: { url: data.url || './' }
+  }))
+})
+
+self.addEventListener('notificationclick', function (e) {
+  e.notification.close()
+  var target = (e.notification.data && e.notification.data.url) || './'
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (cs) {
+      for (var i = 0; i < cs.length; i++) {
+        if ('focus' in cs[i]) { cs[i].navigate(target); return cs[i].focus() }
+      }
+      if (clients.openWindow) return clients.openWindow(target)
+    })
+  )
+})

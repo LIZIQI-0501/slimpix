@@ -8,6 +8,25 @@
   var SPR = window.SlimSprites
   var SCOL = window.SlimSpriteColors
 
+  // ===================== Web Push 配置（关 App 也能提醒） =====================
+  // 部署好 push-server 后，把下面 URL 改成你的后端地址（例如 https://slimpix-push.onrender.com）
+  // 注意：必须是 https，且未配置前下方占位符会让订阅自动跳过（退化为仅 App 内提醒）
+  var PUSH_SERVER_URL = 'REPLACE_WITH_YOUR_PUSH_SERVER_URL'
+  // VAPID 公钥（与 push-server 的私钥配对，可换成你自己的）
+  var VAPID_PUBLIC_KEY = 'BM8WW8C4JhCgSsZTA9LDBxsjgj8c42xkZJH1QR5aq2LOzFrjBAW6s3aXFNu9CKhHd1HEnYnFeVk7iHjUgMJIWkg'
+
+  function urlBase64ToUint8Array(base64String) {
+    var padding = '='.repeat((4 - base64String.length % 4) % 4)
+    var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+    var raw = atob(base64)
+    var arr = new Uint8Array(raw.length)
+    for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i)
+    return arr
+  }
+  function pushEnabled() {
+    return typeof PUSH_SERVER_URL === 'string' && PUSH_SERVER_URL.indexOf('REPLACE_WITH_YOUR') !== 0 && PUSH_SERVER_URL.length > 8
+  }
+
   // ---------- 全局状态 ----------
   var profile = S.getProfile()
   var settings = S.getSettings()
@@ -541,7 +560,7 @@
         '</div></div>' +
         '<div class="field"><label>每日饮水目标 (ml)</label><input id="sW" type="number" value="' + settings.waterGoalMl + '"></div>' +
         '<div class="switch-row"><span>饮水提醒</span><input type="checkbox" id="sWR" ' + (settings.waterReminder ? 'checked' : '') + '></div>' +
-        '<div class="muted small" style="margin-top:-6px">开启后，App 打开时到点推送系统通知提醒喝水（iOS 需先「添加到主屏幕」安装为 App 才会弹通知；关闭 App 后无法后台推送）</div>' +
+        '<div class="muted small" style="margin-top:-6px">开启后到点推送系统通知提醒喝水（App 打开/后台即可提醒；若已部署推送后端并「添加到主屏幕」，关闭 App 也能像闹钟一样提醒。iOS 需 iOS 16.4+ 且先「添加到主屏幕」）</div>' +
         '<div class="switch-row"><span>饭点提醒</span><input type="checkbox" id="sMR" ' + (settings.mealReminder ? 'checked' : '') + '></div>' +
         '<div class="switch-row"><span>背景纯音乐</span><input type="checkbox" id="sBM" ' + (settings.bgMusic ? 'checked' : '') + '></div>' +
         '<button class="btn" id="sSave" style="margin-top:8px">保存</button>' +
@@ -563,7 +582,7 @@
       profile = S.saveProfile({ height: h, age: a, targetWeight: t, gender: g, activityFactor: ACTS[ai].v, targetBodyFat: tbf, currentBodyFat: cbf })
       settings = S.saveSettings({ waterGoalMl: parseInt($('sW').value) || 1700, waterReminder: $('sWR').checked, mealReminder: $('sMR').checked, bgMusic: $('sBM').checked })
       if (window.SlimMusic) window.SlimMusic.setEnabled($('sBM').checked)
-      if (settings.waterReminder) requestWaterPermission(); else stopWaterScheduler()
+      if (settings.waterReminder) requestWaterPermission(); else { stopWaterScheduler(); unsubscribeFromPush() }
       closeSettings(); renderTab(); refreshSprite(); toast('已保存')
     }
     $('sClear').onclick = function () { if (confirm('确定清空所有体重/饮食/计划数据？')) { S.clearAll(); profile = S.getProfile(); settings = S.getSettings(); closeSettings(); renderTab(); refreshSprite(); toast('已清空') } }
@@ -702,8 +721,9 @@
     d.setHours(+p[0], +p[1], 0, 0); return d
   }
   function fireWaterNotification(slot) {
+    // 已订阅 Web Push（后台可关 App 推送）时，系统通知交由后台发送，这里不再重复弹；否则用本地通知兜底
     try {
-      if ('Notification' in window && Notification.permission === 'granted') {
+      if ('Notification' in window && Notification.permission === 'granted' && !S.getPush().subscribed) {
         new Notification('该喝水啦 💧', {
           body: '现在是 ' + slot + '，喝一杯温水（约 250ml）有助代谢～',
           tag: 'slimpix-water-' + slot, icon: 'icon.svg'
@@ -740,11 +760,50 @@
   function setupWaterReminder() {
     if (settings.waterReminder && 'Notification' in window && Notification.permission === 'granted') startWaterScheduler()
   }
+  // ===================== Web Push 订阅（让后台能关 App 也推送） =====================
+  function subscribeToPush() {
+    if (!pushEnabled()) return false
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) { toast('当前浏览器不支持 Web 推送'); return false }
+    try {
+      navigator.serviceWorker.ready.then(function (reg) {
+        return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) })
+      }).then(function (sub) {
+        return fetch(PUSH_SERVER_URL + '/subscribe', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub })
+        }).then(function (res) {
+          if (!res.ok) throw new Error('subscribe failed')
+          S.setPush({ subscribed: true, endpoint: sub.endpoint })
+          toast('已开启「关 App 也提醒」 💧')
+        })
+      }).catch(function (err) { console.warn('subscribeToPush error', err); S.setPush({ subscribed: false, endpoint: null }) })
+    } catch (e) { console.warn('subscribeToPush sync error', e) }
+    return false
+  }
+  function unsubscribeFromPush() {
+    var st = S.getPush()
+    if (!st.subscribed) return
+    try {
+      navigator.serviceWorker.ready.then(function (reg) {
+        return reg.pushManager.getSubscription()
+      }).then(function (sub) {
+        if (sub) {
+          fetch(PUSH_SERVER_URL + '/unsubscribe', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint })
+          }).catch(function () {})
+          return sub.unsubscribe()
+        }
+      }).then(function () { S.setPush({ subscribed: false, endpoint: null }) }).catch(function () {})
+    } catch (e) {}
+  }
+
   function requestWaterPermission() {
     if (!('Notification' in window)) { toast('当前浏览器不支持系统通知'); return }
-    if (Notification.permission === 'granted') { toast('提醒已开启 💧'); startWaterScheduler(); if (tab === 'home') renderHome(); return }
+    function afterGrant() {
+      toast('喝水提醒已开启 💧'); startWaterScheduler(); subscribeToPush(); if (tab === 'home') renderHome()
+    }
+    if (Notification.permission === 'granted') { afterGrant(); return }
     function done(p) {
-      if (p === 'granted') { toast('喝水提醒已开启 💧'); startWaterScheduler() }
+      if (p === 'granted') { afterGrant() }
       else { toast('未授权，将无法收到提醒') }
       if (tab === 'home') renderHome()
     }

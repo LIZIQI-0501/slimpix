@@ -1,0 +1,12 @@
+{
+  "name": "slimpix-push-server",
+  "version": "1.0.0",
+  "description": "SlimPix 轻量 Web Push 后端：在饮水时段定时推送系统通知（关 App 也能提醒）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "web-push": "^3.6.7"
+  }
+}

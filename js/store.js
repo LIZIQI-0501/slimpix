@@ -18,7 +18,7 @@
 
   const KEY = {
     PROFILE: 'profile', WEIGHTS: 'weights', DIET: 'diet', PLAN: 'plan',
-    WATER: 'water', SETTINGS: 'settings', REMINDER_LOG: 'reminder_log', EXERCISE: 'exercise'
+    WATER: 'water', SETTINGS: 'settings', REMINDER_LOG: 'reminder_log', EXERCISE: 'exercise', PUSH: 'push'
   }
 
   const WATER_SLOTS = ['07:00', '09:00', '11:00', '13:00', '15:00', '17:30', '19:00', '21:30']
@@ -142,6 +142,10 @@
     Object.keys(KEY).forEach(k => { try { localStorage.removeItem(PREFIX + KEY[k]) } catch (e) {} })
   }
 
+  // Web Push 订阅状态（仅本机）：subscribed 表示已向后台订阅、可关 App 也提醒
+  function getPush() { return read(KEY.PUSH, { subscribed: false, endpoint: null }) }
+  function setPush(obj) { write(KEY.PUSH, obj); return obj }
+
   const api = {
     KEY, WATER_SLOTS, DEFAULT_WATER_ML, DEFAULT_PROFILE, DEFAULT_SETTINGS,
     getProfile, saveProfile, getSettings, saveSettings,
@@ -150,7 +154,8 @@
     getPlan, setPlan,
     getWaters, toggleWater, waterTotal,
     getExercises, toggleExercise, exerciseDoneCount,
-    getReminderLog, markReminder, clearAll
+    getReminderLog, markReminder, clearAll,
+    getPush, setPush
   }
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api

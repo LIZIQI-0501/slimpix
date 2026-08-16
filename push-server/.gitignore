@@ -1,0 +1,5 @@
+node_modules/
+subs.json
+.sent.json
+.env
+# 注意：vapid-keys.json 已随仓库提交，便于免配置部署；如需更高隐私可改为环境变量覆盖或重新生成密钥对（同步更新 js/app.js 的 VAPID_PUBLIC_KEY）。
