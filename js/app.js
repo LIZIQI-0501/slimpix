@@ -985,6 +985,23 @@
     } catch (e) {}
   }
 
+  // 前端保活：App 打开期间每 5 分钟 ping 一次后端 /tick，
+  // 防止 Render 免费版因无流量(~15分钟)休眠而错过整点提醒。
+  // 注意：关闭 App 后仍需外部定时 ping（如 cron-job.org 每 5 分钟打 /tick）才能 24h 覆盖。
+  var keepAliveId = null
+  function keepAlivePush() {
+    if (!pushEnabled()) return
+    try { fetch(PUSH_SERVER_URL + '/tick', { cache: 'no-store' }).catch(function () {}) } catch (e) {}
+  }
+  function startKeepAlive() {
+    keepAlivePush()
+    if (keepAliveId) clearInterval(keepAliveId)
+    keepAliveId = setInterval(keepAlivePush, 5 * 60 * 1000)
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) keepAlivePush()
+    })
+  }
+
   function requestWaterPermission() {
     if (!('Notification' in window)) { toast('当前浏览器不支持系统通知'); return }
     function afterGrant() {
@@ -1066,6 +1083,8 @@
     }
     // 静默兜底：若此前已订阅但后端记录丢失（Render 重启），重新注册订阅
     ensureSubscribed()
+    // 前端保活：App 打开时持续 ping 后端，避免 Render 休眠导致错过提醒
+    startKeepAlive()
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot)
